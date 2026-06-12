@@ -8,7 +8,31 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ EXCEL (fallback)
+# ✅ MAPA FLAG
+FLAGS = {
+    "polska": "🇵🇱",
+    "niemcy": "🇩🇪",
+    "brazylia": "🇧🇷",
+    "usa": "🇺🇸",
+    "francja": "🇫🇷",
+    "hiszpania": "🇪🇸",
+    "argentyna": "🇦🇷",
+    "anglia": "🏴",
+    "włochy": "🇮🇹",
+}
+
+
+def get_flag(name):
+    if not isinstance(name, str):
+        return ""
+    name = name.lower()
+    for key in FLAGS:
+        if key in name:
+            return FLAGS[key]
+    return ""
+
+
+# ✅ WYNIKI EXCEL
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -41,7 +65,7 @@ def get_live_scores():
         return []
 
 
-# ✅ SMART MATCH + minuta
+# ✅ SMART MATCH
 def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
@@ -67,7 +91,6 @@ def find_live_score(match_name, live_matches):
         if home_l in match_name and away_l in match_name:
             hs = home_data.get("score")
             as_ = away_data.get("score")
-
             minute = m.get("minute") or "LIVE"
 
             if isinstance(hs, int) and isinstance(as_, int):
@@ -127,8 +150,8 @@ def get_ranking():
             match_clean = match.strip()
 
             actual = results_excel.get(match_clean)
-
             live_data = find_live_score(match_clean, live_matches)
+
             if live_data:
                 actual = live_data["score"]
 
@@ -144,7 +167,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA (NAPRAWIONE LINKI!!!)
+# ✅ STRONA GŁÓWNA (NAPRAWIONE LINKI)
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -210,7 +233,7 @@ def home():
     return html
 
 
-# ✅ SZCZEGÓŁY GRACZA (LIVE 🔴 + minuta)
+# ✅ SZCZEGÓŁY GRACZA (FLAGI + LIVE)
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
@@ -248,12 +271,18 @@ def player_details(name: str):
         pts = calc_points(pred, actual)
         total += pts
 
-        emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
+        teams = match.split("-")
+        flag1 = get_flag(teams[0])
+        flag2 = get_flag(teams[1]) if len(teams) > 1 else ""
+
+        match_display = f"{flag1} {teams[0]} - {flag2} {teams[1]}"
+
         color = "red" if is_live else "black"
+        emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
 
         rows += f"""
         <tr style="color:{color}; font-weight:{'bold' if is_live else 'normal'}">
-            <td>{match}</td>
+            <td>{match_display}</td>
             <td>{pred}</td>
             <td>{actual[0]}:{actual[1]}</td>
             <td>{pts} {emoji}</td>
@@ -266,7 +295,6 @@ def player_details(name: str):
     <html>
     <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
 
@@ -291,13 +319,11 @@ def player_details(name: str):
     <tbody>
     {rows}
     </tbody>
+
     </table>
 
     </body>
     </html>
-
     """
-
-    return html
 
     return html
