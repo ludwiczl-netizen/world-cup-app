@@ -1,27 +1,38 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import pandas as pd
+import requests
 
 app = FastAPI()
 
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ WYNIKI (z Excela – dopasowanie 100%)
-def get_results():
-    df = pd.read_excel(FILE, sheet_name="Wyniki")
+# ✅ LIVE API (SportScore)
+def get_live_results():
+    url = "https://sportscore.com/api/widget/matches/?sport=football"
 
-    results = {}
+    try:
+        response = requests.get(url)
+        data = response.json()
 
-    for _, row in df.iterrows():
-        match = row.get("Mecz")
-        g1 = row.get("Gol 1")
-        g2 = row.get("Gol 2")
+        results = {}
 
-        if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
-            results[match.strip()] = (int(g1), int(g2))
+        for m in data.get("matches", []):
+            home = m.get("home", {}).get("name")
+            away = m.get("away", {}).get("name")
 
-    return results
+            hs = m.get("home", {}).get("score")
+            as_ = m.get("away", {}).get("score")
+
+            if home and away and hs is not None and as_ is not None:
+                key = f"{home} - {away}"
+                results[key.strip()] = (int(hs), int(as_))
+
+        return results
+
+    except:
+        return {}  # fallback (jeśli API padnie)
 
 
 # ✅ PUNKTY
@@ -48,7 +59,7 @@ def calc_points(pred, actual):
 # ✅ RANKING
 def get_ranking():
     xls = pd.ExcelFile(FILE, engine="openpyxl")
-    results = get_results()
+    results = get_live_results()
 
     ranking = []
     ignore = ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]
@@ -65,8 +76,12 @@ def get_ranking():
             match = row.get("Mecz")
             pred = row.get("Typ")
 
-            if isinstance(match, str) and match.strip() in results:
-                total += calc_points(pred, results[match.strip()])
+            # 🔥 dopasowanie nazw (bardzo ważne!)
+            if isinstance(match, str):
+                match = match.strip()
+
+                if match in results:
+                    total += calc_points(pred, results[match])
 
         ranking.append({
             "gracz": str(sheet),
@@ -77,7 +92,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA (Flashscore style)
+# ✅ STRONA GŁÓWNA
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -90,7 +105,7 @@ def home():
         rows += f"""
         <tr class="{class_name}">
             <td>{i}</td>
-            <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
+            <td>/gracz/{r['gracz']}{r['gracz']}</a></td>
             <td><b>{r['punkty']}</b></td>
         </tr>
         """
@@ -99,57 +114,33 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-
     <meta http-equiv="refresh" content="60">
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <title>Ranking MŚ 2026</title>
-
     <style>
-    body {{
-        background: #f4f6f9;
-    }}
-
+    body {{ background: #f4f6f9; }}
     .card {{
         border-radius: 16px;
         padding: 20px;
         background: white;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }}
-
     .leader {{
         background: linear-gradient(90deg, gold, #fff8c5);
         font-weight: bold;
     }}
-
-    .table td {{
-        vertical-align: middle;
-        font-size: 16px;
-    }}
-
-    a {{
-        text-decoration: none;
-        color: black;
-    }}
-
-    a:hover {{
-        color: #007bff;
-    }}
+    a {{ text-decoration: none; color: black; }}
     </style>
-
     </head>
 
     <body class="p-3">
 
     <div class="card">
 
-    <h3 class="mb-3">🏆 Ranking MŚ 2026</h3>
+    <h3>🏆 Ranking (LIVE)</h3>
 
     <table class="table">
-
     <thead>
     <tr>
         <th>#</th>
@@ -161,8 +152,11 @@ def home():
     <tbody>
     {rows}
     </tbody>
-
     </table>
+
+    <p style="font-size:12px">
+    Dane: <a href="https://sportscore.com" target="_blank">SportScore</a>
+    </p>
 
     </div>
 
@@ -177,7 +171,7 @@ def home():
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
-    results = get_results()
+    results = get_live_results()
 
     df = pd.read_excel(xls, name)
 
@@ -188,44 +182,41 @@ def player_details(name: str):
         match = row.get("Mecz")
         pred = row.get("Typ")
 
-        if isinstance(match, str) and match.strip() in results:
-            actual = results[match.strip()]
-            pts = calc_points(pred, actual)
-            total += pts
+        if isinstance(match, str):
+            match = match.strip()
 
-            emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
-            color = "green" if pts == 3 else "orange" if pts == 1 else "red"
+            if match in results:
+                actual = results[match]
+                pts = calc_points(pred, actual)
+                total += pts
 
-            rows += f"""
-            <tr>
-                <td>{match.strip().replace("-", " vs ")}</td>
-                <td>{pred}</td>
-                <td>{actual[0]}:{actual[1]}</td>
-                <td style="color:{color}"><b>{pts}</b> {emoji}</td>
-            </tr>
-            """
+                emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
+
+                rows += f"""
+                <tr>
+                    <td>{match}</td>
+                    <td>{pred}</td>
+                    <td>{actual[0]}:{actual[1]}</td>
+                    <td><b>{pts}</b> {emoji}</td>
+                </tr>
+                """
 
     html = f"""
     <!DOCTYPE html>
     <html>
     <head>
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <title>{name}</title>
-
     </head>
 
     <body class="p-3">
 
-    <a href="/">⬅ Powrót</a>
+    /⬅ Powrót</a>
 
-    <h2>👤 {name}</h2>
-    <h4>🏆 Punkty: {total}</h4>
+    <h2>{name}</h2>
+    <h4>Punkty: {total}</h4>
 
-    <table class="table table-striped">
-
+    <table class="table">
     <thead>
     <tr>
         <th>Mecz</th>
@@ -238,7 +229,6 @@ def player_details(name: str):
     <tbody>
     {rows}
     </tbody>
-
     </table>
 
     </body>
