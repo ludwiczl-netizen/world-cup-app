@@ -8,7 +8,7 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ FLAGI (obrazki)
+# ===== FLAGI =====
 def get_flag(team):
     mapping = {
         "polska": "pl",
@@ -24,11 +24,11 @@ def get_flag(team):
 
     for k in mapping:
         if k in team.lower():
-            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
+            return f'https://flagcdn.com/24x18/{mapping[k]}.png'
     return ""
 
 
-# ✅ EXCEL
+# ===== EXCEL =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -40,25 +40,19 @@ def get_results():
     return results
 
 
-# ✅ LIVE API (SAFE)
+# ===== LIVE =====
 def get_live():
     try:
-        res = requests.get(
+        r = requests.get(
             "https://sportscore.com/api/widget/matches/?sport=football",
             timeout=5
         )
-
-        if res.status_code != 200:
-            return []
-
-        data = res.json()
+        data = r.json()
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
-
     except:
         return []
 
 
-# ✅ LIVE MATCH
 def get_live_match(name, matches):
     if not isinstance(name, str):
         return None
@@ -95,7 +89,7 @@ def get_live_match(name, matches):
     return None
 
 
-# ✅ PUNKTY + KOLOR + SYMBOL
+# ===== PUNKTY =====
 def get_points(pred, actual):
     try:
         p1, p2 = map(int, str(pred).replace("-", ":").split(":"))
@@ -103,17 +97,23 @@ def get_points(pred, actual):
 
         if p1 == a1 and p2 == a2:
             return 3, "✅", "green"
-        if (p1 - p2) * (a1 - a2) > 0:
-            return 1, "➖", "orange"
-        if p1 == p2 and a1 == a2:
+        if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
         return 0, "❌", "red"
-
     except:
         return 0, "❌", "red"
 
 
-# ✅ RANKING
+# ===== NAVBAR =====
+def navbar():
+    return """
+    <div class="nav">
+        <a href="/">🏠 Ranking</a>
+    </div>
+    """
+
+
+# ===== RANKING =====
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
@@ -151,16 +151,7 @@ def get_ranking():
     return out
 
 
-# ✅ NAVBAR
-def navbar():
-    return """
-    <div class="nav">
-        <a href="/">🏆 Ranking</a>
-    </div>
-    """
-
-
-# ✅ STRONA GŁÓWNA
+# ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
 def home():
     data = get_ranking()
@@ -179,26 +170,27 @@ def home():
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-
     <style>
-    body {{font-family:Arial;background:#eee;margin:0}}
 
-    .box {{max-width:500px;margin:auto;padding:10px}}
+    body {{background:#f4f4f4;font-family:Arial;margin:0}}
 
-    table {{width:100%;background:white;border-radius:10px}}
+    .container {{max-width:600px;margin:auto;padding:10px}}
+
+    table {{width:100%;background:white;border-radius:12px}}
 
     td {{padding:12px}}
 
-    .pts {{font-weight:bold;font-size:18px}}
-
-    a {{text-decoration:none;color:black;font-weight:bold}}
+    .pts {{
+        font-size:20px;
+        font-weight:bold;
+    }}
 
     .nav {{
         position:fixed;
         bottom:0;
         width:100%;
         background:#111;
-        padding:10px;
+        padding:12px;
         text-align:center;
     }}
 
@@ -209,7 +201,7 @@ def home():
 
     <body>
 
-    <div class="box">
+    <div class="container">
     <h3>🏆 Ranking</h3>
     <table>{rows}</table>
     </div>
@@ -221,7 +213,7 @@ def home():
     """
 
 
-# ✅ SZCZEGÓŁY GRACZA
+# ===== PLAYER =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
@@ -231,7 +223,7 @@ def player(name: str):
     results = get_results()
     live = get_live()
 
-    rows = ""
+    html = ""
     total = 0
 
     for _, r in df.iterrows():
@@ -255,24 +247,24 @@ def player(name: str):
         if not actual:
             continue
 
-        pts, symbol, color = get_points(typ, actual)
+        pts, sym, col = get_points(typ, actual)
         total += pts
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
-        rows += f"""
-        <div class="match">
+        html += f"""
+        <div class="card">
 
-            <div>
+            <div class="teams">
                 <div>{get_flag(t1)} {t1}</div>
                 <div>{get_flag(t2)} {t2}</div>
             </div>
 
-            <div class="score">
-                <div class="real">{actual[0]}:{actual[1]}</div>
-                <div class="pred">typ: {typ}</div>
+            <div class="right">
+                <div class="score">{actual[0]}:{actual[1]}</div>
+                <div class="pred">TYP {typ}</div>
                 <div class="live">{'🔴 '+str(minute) if is_live else ''}</div>
-                <div class="pts {color}">{symbol} {pts} pkt</div>
+                <div class="pts {col}">{sym} {pts} pkt</div>
             </div>
 
         </div>
@@ -284,38 +276,49 @@ def player(name: str):
     <meta name="viewport" content="width=device-width">
 
     <style>
-    body {{background:#f2f2f2;font-family:Arial;margin:0}}
 
-    .box {{max-width:500px;margin:auto;padding:10px 10px 60px}}
+    body {{background:#eee;font-family:Arial;margin:0}}
+
+    .container {{max-width:600px;margin:auto;padding:10px 10px 60px}}
 
     .header {{
         background:#111;
         color:white;
         padding:14px;
-        border-radius:10px;
+        border-radius:12px;
         margin-bottom:10px;
-    }}
-
-    .big {{
         text-align:center;
-        font-size:22px;
-        font-weight:bold;
+        font-size:20px;
     }}
 
-    .match {{
+    .card {{
         background:white;
         padding:14px;
-        border-radius:12px;
+        border-radius:14px;
         margin-bottom:10px;
         display:flex;
         justify-content:space-between;
     }}
 
-    .real {{font-size:22px;font-weight:bold}}
+    .score {{
+        font-size:26px;
+        font-weight:bold;
+    }}
 
-    .pred {{font-size:12px;color:gray}}
+    .pred {{
+        font-size:18px;
+        font-weight:bold;
+        color:#333;
+    }}
 
-    .live {{color:red;font-size:12px}}
+    .live {{
+        color:red;
+        animation:blink 1s infinite;
+    }}
+
+    @keyframes blink {{
+        50% {{opacity:0.4}}
+    }}
 
     .green {{color:green}}
     .orange {{color:orange}}
@@ -326,30 +329,22 @@ def player(name: str):
         bottom:0;
         width:100%;
         background:#111;
-        padding:10px;
+        padding:12px;
         text-align:center;
     }}
 
-    .nav a {{color:white;text-decoration:none}}
-
-    .flag {{margin-right:6px}}
+    .nav a {{color:white}}
 
     </style>
     </head>
 
     <body>
 
-    <div class="box">
+    <div class="container">
 
-        <div class="header">
-            <a href="/">⬅ Powrót</a>
-        </div>
+    <div class="header">{name} • {total} pkt</div>
 
-        <div class="header big">
-            {name} • {total} pkt
-        </div>
-
-        {rows}
+    {html}
 
     </div>
 
@@ -358,3 +353,4 @@ def player(name: str):
     </body>
     </html>
     """
+``
