@@ -8,38 +8,34 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ FLAGI (rozszerzone)
-FLAGS = {
-    "polska": "🇵🇱",
-    "niemcy": "🇩🇪",
-    "brazylia": "🇧🇷",
-    "usa": "🇺🇸",
-    "francja": "🇫🇷",
-    "hiszpania": "🇪🇸",
-    "argentyna": "🇦🇷",
-    "anglia": "🏴",
-    "włochy": "🇮🇹",
-    "meksyk": "🇲🇽",
-    "rpa": "🇿🇦",
-    "republika południowej afryki": "🇿🇦",
-    "korea południowa": "🇰🇷",
-    "czechy": "🇨🇿"
-}
-
-
-def get_flag(name):
-    if not isinstance(name, str):
+# ✅ FLAGI JAKO OBRAZKI (DZIAŁA WSZĘDZIE)
+def get_flag_img(team_name):
+    if not isinstance(team_name, str):
         return ""
 
-    name = name.lower().strip()
+    name = team_name.lower().strip()
 
-    # ✅ skróty
-    if name == "rpa":
-        return "🇿🇦"
+    mapping = {
+        "polska": "pl",
+        "niemcy": "de",
+        "brazylia": "br",
+        "usa": "us",
+        "francja": "fr",
+        "hiszpania": "es",
+        "argentyna": "ar",
+        "anglia": "gb",
+        "włochy": "it",
+        "meksyk": "mx",
+        "rpa": "za",
+        "republika południowej afryki": "za",
+        "korea południowa": "kr",
+        "czechy": "cz"
+    }
 
-    for key in FLAGS:
+    for key in mapping:
         if key in name:
-            return FLAGS[key]
+            code = mapping[key]
+            return f'<img src="https://flagcdn.com/24x18/{code}.png" style="margin-right:5px;">'
 
     return ""
 
@@ -73,12 +69,11 @@ def get_live_scores():
         matches = data.get("matches", [])
 
         return [m for m in matches if isinstance(m, dict)]
-
     except:
         return []
 
 
-# ✅ MATCH + minuta
+# ✅ MATCH + MINUTA
 def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
@@ -180,7 +175,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA
+# ✅ STRONA GŁÓWNA (LINK NAPRAWIONY)
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -224,6 +219,7 @@ def home():
 
     <body class="p-3">
     <div class="card">
+
     <h3>🏆 Ranking LIVE</h3>
 
     <table class="table">
@@ -234,6 +230,7 @@ def home():
     <tbody>
     {rows}
     </tbody>
+
     </table>
 
     </div>
@@ -244,7 +241,7 @@ def home():
     return html
 
 
-# ✅ SZCZEGÓŁY GRACZA
+# ✅ SZCZEGÓŁY GRACZA (FLAGI + LIVE)
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
@@ -283,12 +280,11 @@ def player_details(name: str):
         total += pts
 
         teams = match.split("-")
-
         t1 = teams[0].strip()
         t2 = teams[1].strip() if len(teams) > 1 else ""
 
-        flag1 = get_flag(t1)
-        flag2 = get_flag(t2)
+        flag1 = get_flag_img(t1)
+        flag2 = get_flag_img(t2)
 
         match_display = f"{flag1} {t1} - {flag2} {t2}"
 
@@ -334,13 +330,11 @@ def player_details(name: str):
     <tbody>
     {rows}
     </tbody>
+
     </table>
 
     </body>
     </html>
-
     """
-
-    return html
 
     return html
