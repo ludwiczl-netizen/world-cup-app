@@ -22,13 +22,9 @@ def get_flag(team):
     if not isinstance(team, str):
         return ""
 
-    team = team.lower()
-
-    for key in mapping:
-        if key in team:
-            code = mapping[key]
-            return f'<img src="https://flagcdn.com/24x18/{code}.png" class="flag">'
-
+    for k in mapping:
+        if k in team.lower():
+            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
     return ""
 
 
@@ -37,13 +33,9 @@ def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
 
-    for _, row in df.iterrows():
-        match = row.get("Mecz")
-        g1 = row.get("Gol 1")
-        g2 = row.get("Gol 2")
-
-        if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
-            results[match.strip()] = (int(g1), int(g2))
+    for _, r in df.iterrows():
+        if isinstance(r.get("Mecz"), str) and pd.notna(r.get("Gol 1")):
+            results[r["Mecz"].strip()] = (int(r["Gol 1"]), int(r["Gol 2"]))
 
     return results
 
@@ -60,23 +52,20 @@ def get_live():
             return []
 
         data = res.json()
-
-        # 🔥 filtr bezpieczeństwa
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
 
     except:
         return []
 
 
-# ✅ SAFE MATCH
-def get_live_match(match_name, matches):
-    if not isinstance(match_name, str):
+# ✅ LIVE MATCH
+def get_live_match(name, matches):
+    if not isinstance(name, str):
         return None
 
-    match_name = match_name.lower()
+    name = name.lower()
 
     for m in matches:
-
         if not isinstance(m, dict):
             continue
 
@@ -92,8 +81,7 @@ def get_live_match(match_name, matches):
         if not isinstance(h, str) or not isinstance(a, str):
             continue
 
-        if h.lower() in match_name and a.lower() in match_name:
-
+        if h.lower() in name and a.lower() in name:
             hs = home.get("score")
             as_ = away.get("score")
 
@@ -107,34 +95,31 @@ def get_live_match(match_name, matches):
     return None
 
 
-# ✅ PUNKTY
-def calc_points(pred, actual):
-    if not isinstance(pred, str) or not actual:
-        return 0
-
+# ✅ PUNKTY + KOLOR + SYMBOL
+def get_points(pred, actual):
     try:
-        p1, p2 = map(int, pred.replace("-", ":").split(":"))
+        p1, p2 = map(int, str(pred).replace("-", ":").split(":"))
         a1, a2 = actual
 
         if p1 == a1 and p2 == a2:
-            return 3
+            return 3, "✅", "green"
         if (p1 - p2) * (a1 - a2) > 0:
-            return 1
+            return 1, "➖", "orange"
         if p1 == p2 and a1 == a2:
-            return 1
-    except:
-        return 0
+            return 1, "➖", "orange"
+        return 0, "❌", "red"
 
-    return 0
+    except:
+        return 0, "❌", "red"
 
 
 # ✅ RANKING
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
-    live_matches = get_live()
+    live = get_live()
 
-    ranking = []
+    out = []
 
     for sheet in xls.sheet_names:
         if sheet in ["Wyniki", "Ranking"]:
@@ -143,38 +128,44 @@ def get_ranking():
         df = pd.read_excel(xls, sheet)
         total = 0
 
-        for _, row in df.iterrows():
-            match = row.get("Mecz")
-            pred = row.get("Typ")
+        for _, r in df.iterrows():
+            match = r.get("Mecz")
+            typ = r.get("Typ")
 
             if not isinstance(match, str):
                 continue
 
             actual = results.get(match.strip())
+            live_data = get_live_match(match, live)
 
-            live_data = get_live_match(match, live_matches)
             if live_data:
                 actual = live_data["score"]
 
             if actual:
-                total += calc_points(pred, actual)
+                pts, _, _ = get_points(typ, actual)
+                total += pts
 
-        ranking.append({
-            "name": sheet,
-            "pts": total
-        })
+        out.append({"name": sheet, "pts": total})
 
-    ranking.sort(key=lambda x: x["pts"], reverse=True)
-    return ranking
+    out.sort(key=lambda x: x["pts"], reverse=True)
+    return out
 
 
-# ✅ HOME (✅ POPRAWIONE LINKI)
+# ✅ NAVBAR
+def navbar():
+    return """
+    <div class="nav">
+        <a href="/">🏆 Ranking</a>
+    </div>
+    """
+
+
+# ✅ STRONA GŁÓWNA
 @app.get("/", response_class=HTMLResponse)
 def home():
     data = get_ranking()
 
     rows = ""
-
     for i, r in enumerate(data, 1):
         rows += f"""
         <tr>
@@ -188,31 +179,49 @@ def home():
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
+
     <style>
     body {{font-family:Arial;background:#eee;margin:0}}
+
     .box {{max-width:500px;margin:auto;padding:10px}}
-    table {{
-        width:100%;
-        background:white;
-        border-radius:10px;
-    }}
+
+    table {{width:100%;background:white;border-radius:10px}}
+
     td {{padding:12px}}
+
+    .pts {{font-weight:bold;font-size:18px}}
+
     a {{text-decoration:none;color:black;font-weight:bold}}
-    .pts {{font-size:18px;font-weight:bold}}
+
+    .nav {{
+        position:fixed;
+        bottom:0;
+        width:100%;
+        background:#111;
+        padding:10px;
+        text-align:center;
+    }}
+
+    .nav a {{color:white;text-decoration:none}}
+
     </style>
     </head>
 
     <body>
+
     <div class="box">
     <h3>🏆 Ranking</h3>
     <table>{rows}</table>
     </div>
+
+    {navbar()}
+
     </body>
     </html>
     """
 
 
-# ✅ PLAYER (FLASH SCORE STYLE)
+# ✅ SZCZEGÓŁY GRACZA
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
@@ -220,21 +229,20 @@ def player(name: str):
     df = pd.read_excel(xls, name)
 
     results = get_results()
-    live_matches = get_live()
+    live = get_live()
 
     rows = ""
     total = 0
 
-    for _, row in df.iterrows():
-
-        match = row.get("Mecz")
-        pred = row.get("Typ")
+    for _, r in df.iterrows():
+        match = r.get("Mecz")
+        typ = r.get("Typ")
 
         if not isinstance(match, str):
             continue
 
         actual = results.get(match.strip())
-        live_data = get_live_match(match, live_matches)
+        live_data = get_live_match(match, live)
 
         is_live = False
         minute = ""
@@ -247,23 +255,26 @@ def player(name: str):
         if not actual:
             continue
 
-        pts = calc_points(pred, actual)
+        pts, symbol, color = get_points(typ, actual)
         total += pts
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
         rows += f"""
         <div class="match">
-            <div class="teams">
+
+            <div>
                 <div>{get_flag(t1)} {t1}</div>
                 <div>{get_flag(t2)} {t2}</div>
             </div>
 
             <div class="score">
-                {actual[0]}:{actual[1]}
+                <div class="real">{actual[0]}:{actual[1]}</div>
+                <div class="pred">typ: {typ}</div>
                 <div class="live">{'🔴 '+str(minute) if is_live else ''}</div>
-                <div class="pts">{pts} pkt</div>
+                <div class="pts {color}">{symbol} {pts} pkt</div>
             </div>
+
         </div>
         """
 
@@ -271,11 +282,11 @@ def player(name: str):
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-    <style>
 
+    <style>
     body {{background:#f2f2f2;font-family:Arial;margin:0}}
 
-    .box {{max-width:500px;margin:auto;padding:10px}}
+    .box {{max-width:500px;margin:auto;padding:10px 10px 60px}}
 
     .header {{
         background:#111;
@@ -300,19 +311,28 @@ def player(name: str):
         justify-content:space-between;
     }}
 
-    .score {{
-        text-align:right;
-        font-size:22px;
-        font-weight:bold;
+    .real {{font-size:22px;font-weight:bold}}
+
+    .pred {{font-size:12px;color:gray}}
+
+    .live {{color:red;font-size:12px}}
+
+    .green {{color:green}}
+    .orange {{color:orange}}
+    .red {{color:red}}
+
+    .nav {{
+        position:fixed;
+        bottom:0;
+        width:100%;
+        background:#111;
+        padding:10px;
+        text-align:center;
     }}
 
-    .live {{color:red;font-size:13px}}
-
-    .pts {{color:#007bff;font-size:15px}}
+    .nav a {{color:white;text-decoration:none}}
 
     .flag {{margin-right:6px}}
-
-    a {{color:white;text-decoration:none}}
 
     </style>
     </head>
@@ -333,6 +353,9 @@ def player(name: str):
 
     </div>
 
+    {navbar()}
+
     </body>
     </html>
     """
+``
