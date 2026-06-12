@@ -32,9 +32,6 @@ def words(text):
 
 # ===== FLAGI =====
 def get_flag(team):
-    if not isinstance(team, str):
-        return ""
-
     mapping = {
         "polska": "pl", "niemcy": "de", "meksyk": "mx",
         "kanada": "ca", "usa": "us", "paragwaj": "py",
@@ -63,7 +60,7 @@ def get_flag(team):
 
     for k in mapping:
         if k in t:
-            return f'https://flagcdn.com/24x18/{mapping[k]}.png'
+            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag"/>'
 
     return ""
 
@@ -94,21 +91,16 @@ def get_live():
         return []
 
 
-# ===== DOPASOWANIE DRUŻYN (NAJWAŻNIEJSZE🔥) =====
+# ===== DOPASOWANIE DRUŻYN =====
 def match_team(excel_team, api_team):
-    we = words(excel_team)
-    wa = words(api_team)
-
-    for w1 in we:
-        for w2 in wa:
+    for w1 in words(excel_team):
+        for w2 in words(api_team):
             if similar(w1, w2) > 0.7:
                 return True
-
     return False
 
 
 def get_live_match(match_name, matches):
-
     if not isinstance(match_name, str):
         return None, ""
 
@@ -175,7 +167,7 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
-        total, hits = 0, 0
+        total = hits = 0
 
         for _, r in df.iterrows():
             match = r.get("Mecz")
@@ -193,11 +185,10 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
-
                 if pts == 3:
                     hits += 1
 
-        data.append({"name": sheet, "pts": total, "hits": hits})
+        data.append({"name": sheet.strip(), "pts": total, "hits": hits})
 
     return sorted(data, key=lambda x: (x["pts"], x["hits"]), reverse=True)
 
@@ -205,13 +196,13 @@ def get_ranking():
 # ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
 def home():
-    rows = ""
 
+    rows = ""
     for i, r in enumerate(get_ranking(), 1):
         rows += f"""
         <tr>
             <td>{i}</td>
-            <td>/gracz/{r['name']}{r['name']}</a></td>
+            <td><a href="/gracz/{r['name']}">{r['name']}</a></td>
             <td>{r['pts']}</td>
             <td>🎯 {r['hits']}</td>
         </tr>
@@ -238,104 +229,5 @@ def home():
     </table>
     </div>
     </body>
-    </html>
-    """
-
-
-# ===== PLAYER =====
-@app.get("/gracz/{name}", response_class=HTMLResponse)
-def player(name: str):
-
-    df = pd.read_excel(pd.ExcelFile(FILE), name)
-
-    results = get_results()
-    live = get_live()
-
-    html = ""
-    total = hits = partial = miss = 0
-
-    for _, r in df.iterrows():
-
-        match = r.get("Mecz")
-        typ = r.get("Typ")
-
-        if not isinstance(match, str):
-            continue
-
-        actual = results.get(match.strip())
-        live_score, minute = get_live_match(match, live)
-
-        is_live = False
-
-        if live_score:
-            actual = live_score
-            is_live = True
-
-        t1, t2 = [x.strip() for x in match.split("-")]
-
-        # przyszły mecz
-        if not actual:
-            html += f"""
-            <div style="background:#eee;padding:12px;margin:10px;border-radius:10px;color:#888;display:flex;justify-content:space-between">
-                <div>
-                    <div>{get_flag(t1)} {t1}</div>
-                    <div>{get_flag(t2)} {t2}</div>
-                </div>
-                <div>-:-<br>TYP {typ}</div>
-            </div>
-            """
-            continue
-
-        pts, sym, col = get_points(typ, actual)
-        total += pts
-
-        if pts == 3:
-            hits += 1
-        elif pts == 1:
-            partial += 1
-        else:
-            miss += 1
-
-        live_style = "background:#ffeaea;border:2px solid red;" if is_live else "background:white;"
-
-        html += f"""
-        <div style="{live_style} padding:12px;margin:10px;border-radius:10px;display:flex;justify-content:space-between">
-            <div>
-                <div>{get_flag(t1)} {t1}</div>
-                <div>{get_flag(t2)} {t2}</div>
-            </div>
-            <div>
-                <div style="font-size:20px;font-weight:bold">{actual[0]}:{actual[1]}</div>
-                <div>TYP {typ}</div>
-                <div style="color:red">{minute if is_live else ""}</div>
-                <div style="color:{col}">{sym} {pts}</div>
-            </div>
-        </div>
-        """
-
-    total_matches = hits + partial + miss
-    acc = int(hits / total_matches * 100) if total_matches else 0
-
-    return f"""
-    <html>
-    <head>
-    <meta name="viewport" content="width=device-width">
-    <style>
-    body {{background:#eee;font-family:Arial}}
-    .box {{max-width:500px;margin:auto;padding:10px}}
-    .header {{background:black;color:white;padding:10px;border-radius:10px;margin-bottom:10px;text-align:center}}
-    </style>
-    </head>
-    <body>
-    <div class="box">
-    <div class="header">/⬅ Powrót</a></div>
-    <div class="header">{name} • {total} pkt</div>
-    <div style="background:white;padding:10px;margin-bottom:10px;border-radius:10px">
-        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
-    </div>
-    {html}
-    </div>
-    </body>
-
     </html>
     """
