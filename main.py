@@ -24,7 +24,8 @@ def get_flag(team):
 
     for k in mapping:
         if k in team.lower():
-            return f'https://flagcdn.com/24x18/{mapping[k]}.png'
+            code = mapping[k]
+            return f'<img src="https://flagcdn.com/24x18/{code}.png" class="flag">'
     return ""
 
 
@@ -100,17 +101,9 @@ def get_points(pred, actual):
         if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
         return 0, "❌", "red"
+
     except:
         return 0, "❌", "red"
-
-
-# ===== NAVBAR =====
-def navbar():
-    return """
-    <div class="nav">
-        <a href="/">🏠 Ranking</a>
-    </div>
-    """
 
 
 # ===== RANKING =====
@@ -122,7 +115,7 @@ def get_ranking():
     out = []
 
     for sheet in xls.sheet_names:
-        if sheet in ["Wyniki", "Ranking"]:
+        if sheet in ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]:
             continue
 
         df = pd.read_excel(xls, sheet)
@@ -174,9 +167,13 @@ def home():
 
     body {{background:#f4f4f4;font-family:Arial;margin:0}}
 
-    .container {{max-width:600px;margin:auto;padding:10px}}
+    .container {{max-width:500px;margin:auto;padding:10px}}
 
-    table {{width:100%;background:white;border-radius:12px}}
+    table {{
+        width:100%;
+        background:white;
+        border-radius:12px;
+    }}
 
     td {{padding:12px}}
 
@@ -185,16 +182,11 @@ def home():
         font-weight:bold;
     }}
 
-    .nav {{
-        position:fixed;
-        bottom:0;
-        width:100%;
-        background:#111;
-        padding:12px;
-        text-align:center;
+    a {{
+        text-decoration:none;
+        color:black;
+        font-weight:bold;
     }}
-
-    .nav a {{color:white;text-decoration:none}}
 
     </style>
     </head>
@@ -205,8 +197,6 @@ def home():
     <h3>🏆 Ranking</h3>
     <table>{rows}</table>
     </div>
-
-    {navbar()}
 
     </body>
     </html>
@@ -223,7 +213,7 @@ def player(name: str):
     results = get_results()
     live = get_live()
 
-    html = ""
+    rows = ""
     total = 0
 
     for _, r in df.iterrows():
@@ -252,10 +242,10 @@ def player(name: str):
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
-        html += f"""
+        rows += f"""
         <div class="card">
 
-            <div class="teams">
+            <div>
                 <div>{get_flag(t1)} {t1}</div>
                 <div>{get_flag(t2)} {t2}</div>
             </div>
@@ -274,12 +264,15 @@ def player(name: str):
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-
     <style>
 
     body {{background:#eee;font-family:Arial;margin:0}}
 
-    .container {{max-width:600px;margin:auto;padding:10px 10px 60px}}
+    .container {{
+        max-width:500px;
+        margin:auto;
+        padding:10px;
+    }}
 
     .header {{
         background:#111;
@@ -294,7 +287,7 @@ def player(name: str):
     .card {{
         background:white;
         padding:14px;
-        border-radius:14px;
+        border-radius:12px;
         margin-bottom:10px;
         display:flex;
         justify-content:space-between;
@@ -313,27 +306,17 @@ def player(name: str):
 
     .live {{
         color:red;
-        animation:blink 1s infinite;
-    }}
-
-    @keyframes blink {{
-        50% {{opacity:0.4}}
+        font-size:13px;
     }}
 
     .green {{color:green}}
     .orange {{color:orange}}
     .red {{color:red}}
 
-    .nav {{
-        position:fixed;
-        bottom:0;
-        width:100%;
-        background:#111;
-        padding:12px;
-        text-align:center;
+    .flag {{
+        width:24px;
+        margin-right:6px;
     }}
-
-    .nav a {{color:white}}
 
     </style>
     </head>
@@ -342,13 +325,17 @@ def player(name: str):
 
     <div class="container">
 
-    <div class="header">{name} • {total} pkt</div>
+        <div class="header">
+            <a href="/" style="color:white;text-decoration:none">⬅ Powrót</a>
+        </div>
 
-    {html}
+        <div class="header">
+            {name} • {total} pkt
+        </div>
+
+        {rows}
 
     </div>
-
-    {navbar()}
 
     </body>
     </html>
