@@ -8,7 +8,7 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ EXCEL
+# ✅ EXCEL (fallback)
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -24,39 +24,30 @@ def get_results():
     return results
 
 
-# ✅ LIVE API (super bezpieczne)
+# ✅ LIVE API
 def get_live_scores():
     try:
         url = "https://sportscore.com/api/widget/matches/?sport=football"
         res = requests.get(url, timeout=5)
 
-        # 🔥 BEZPIECZNE PARSOWANIE
         if res.status_code != 200:
             return []
 
         data = res.json()
-
         matches = data.get("matches", [])
 
-        # ✅ tylko słowniki
-        only_dicts = []
-        for m in matches:
-            if isinstance(m, dict):
-                only_dicts.append(m)
-
-        return only_dicts
+        return [m for m in matches if isinstance(m, dict)]
 
     except:
         return []
 
 
-# ✅ SMART MATCHING (100% safe)
+# ✅ SMART MATCH + minuta
 def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
     for m in live_matches:
 
-        # 🔥 PODWÓJNE ZABEZPIECZENIE
         if not isinstance(m, dict):
             continue
 
@@ -72,15 +63,21 @@ def find_live_score(match_name, live_matches):
         if not isinstance(home, str) or not isinstance(away, str):
             continue
 
-        home = home.lower()
-        away = away.lower()
+        home_l = home.lower()
+        away_l = away.lower()
 
-        if home in match_name and away in match_name:
+        if home_l in match_name and away_l in match_name:
             hs = home_data.get("score")
             as_ = away_data.get("score")
 
+            minute = m.get("minute") or "LIVE"
+
             if isinstance(hs, int) and isinstance(as_, int):
-                return (hs, as_)
+                return {
+                    "score": (hs, as_),
+                    "minute": minute,
+                    "live": True
+                }
 
     return None
 
@@ -133,9 +130,9 @@ def get_ranking():
 
             actual = results_excel.get(match_clean)
 
-            live_score = find_live_score(match_clean, live_matches)
-            if live_score:
-                actual = live_score
+            live_data = find_live_score(match_clean, live_matches)
+            if live_data:
+                actual = live_data["score"]
 
             if actual:
                 total += calc_points(pred, actual)
@@ -149,7 +146,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA (NAPRAWIONY LINK!)
+# ✅ STRONA GŁÓWNA
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -162,7 +159,7 @@ def home():
         rows += f"""
         <tr class="{leader}">
             <td>{i}</td>
-            <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
+            <td>/gracz/{r['gracz']}{r['gracz']}</a></td>
             <td><b>{r['punkty']}</b></td>
         </tr>
         """
@@ -171,7 +168,7 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-    <meta http-equiv="refresh" content="60">
+    <meta http-equiv="refresh" content="30">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -219,7 +216,7 @@ def home():
     return html
 
 
-# ✅ SZCZEGÓŁY GRACZA
+# ✅ SZCZEGÓŁY GRACZA (🔥 LIVE highlight)
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
@@ -241,10 +238,15 @@ def player_details(name: str):
         match_clean = match.strip()
 
         actual = results_excel.get(match_clean)
+        live_data = find_live_score(match_clean, live_matches)
 
-        live_score = find_live_score(match_clean, live_matches)
-        if live_score:
-            actual = live_score
+        is_live = False
+        minute = ""
+
+        if live_data:
+            actual = live_data["score"]
+            is_live = True
+            minute = live_data["minute"]
 
         if not actual:
             continue
@@ -254,12 +256,15 @@ def player_details(name: str):
 
         emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
 
+        color = "red" if is_live else "black"
+
         rows += f"""
-        <tr>
+        <tr style="color:{color}; font-weight:{'bold' if is_live else 'normal'}">
             <td>{match}</td>
             <td>{pred}</td>
             <td>{actual[0]}:{actual[1]}</td>
             <td><b>{pts}</b> {emoji}</td>
+            <td>{'⏱ ' + str(minute) if is_live else ''}</td>
         </tr>
         """
 
@@ -274,7 +279,7 @@ def player_details(name: str):
 
     <body class="p-3">
 
-    <a href="/">⬅ Powrót</a>
+    /⬅ Powrót</a>
 
     <h2>{name}</h2>
     <h4>Punkty: {total}</h4>
@@ -287,6 +292,7 @@ def player_details(name: str):
         <th>Typ</th>
         <th>Wynik</th>
         <th>Punkty</th>
+        <th>LIVE</th>
     </tr>
     </thead>
 
@@ -298,7 +304,8 @@ def player_details(name: str):
 
     </body>
     </html>
-  
+
     """
 
+    return html
     return html
