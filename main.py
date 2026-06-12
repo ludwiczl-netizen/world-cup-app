@@ -239,4 +239,6 @@ def player(name: str):
     {rows}
 
     </body>
+
     </html>
+    """
