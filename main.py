@@ -8,7 +8,7 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ EXCEL (pewne dane)
+# ✅ EXCEL
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -24,48 +24,68 @@ def get_results():
     return results
 
 
-# ✅ LIVE API (bezpieczne)
+# ✅ LIVE API (super bezpieczne)
 def get_live_scores():
     try:
         url = "https://sportscore.com/api/widget/matches/?sport=football"
         res = requests.get(url, timeout=5)
+
+        # 🔥 BEZPIECZNE PARSOWANIE
+        if res.status_code != 200:
+            return []
+
         data = res.json()
 
         matches = data.get("matches", [])
 
-        # 🔥 filtr: tylko dict
-        return [m for m in matches if isinstance(m, dict)]
+        # ✅ tylko słowniki
+        only_dicts = []
+        for m in matches:
+            if isinstance(m, dict):
+                only_dicts.append(m)
+
+        return only_dicts
 
     except:
         return []
 
 
-# ✅ SMART DOPASOWANIE
+# ✅ SMART MATCHING (100% safe)
 def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
     for m in live_matches:
 
-        home = m.get("home", {}).get("name", "")
-        away = m.get("away", {}).get("name", "")
+        # 🔥 PODWÓJNE ZABEZPIECZENIE
+        if not isinstance(m, dict):
+            continue
 
-        if not home or not away:
+        home_data = m.get("home")
+        away_data = m.get("away")
+
+        if not isinstance(home_data, dict) or not isinstance(away_data, dict):
+            continue
+
+        home = home_data.get("name")
+        away = away_data.get("name")
+
+        if not isinstance(home, str) or not isinstance(away, str):
             continue
 
         home = home.lower()
         away = away.lower()
 
         if home in match_name and away in match_name:
-            hs = m.get("home", {}).get("score")
-            as_ = m.get("away", {}).get("score")
+            hs = home_data.get("score")
+            as_ = away_data.get("score")
 
-            if hs is not None and as_ is not None:
-                return (int(hs), int(as_))
+            if isinstance(hs, int) and isinstance(as_, int):
+                return (hs, as_)
 
     return None
 
 
-# ✅ LICZENIE PUNKTÓW
+# ✅ PUNKTY
 def calc_points(pred, actual):
     if not isinstance(pred, str):
         return 0
@@ -111,10 +131,8 @@ def get_ranking():
 
             match_clean = match.strip()
 
-            # ✅ Excel wynik
             actual = results_excel.get(match_clean)
 
-            # ✅ LIVE nadpisuje
             live_score = find_live_score(match_clean, live_matches)
             if live_score:
                 actual = live_score
@@ -131,7 +149,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA
+# ✅ STRONA GŁÓWNA (NAPRAWIONY LINK!)
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -170,10 +188,6 @@ def home():
         background:gold;
         font-weight:bold;
     }}
-    a {{
-        text-decoration:none;
-        color:black;
-    }}
     </style>
     </head>
 
@@ -194,8 +208,8 @@ def home():
     <tbody>
     {rows}
     </tbody>
-    </table>
 
+    </table>
     </div>
 
     </body>
@@ -227,8 +241,8 @@ def player_details(name: str):
         match_clean = match.strip()
 
         actual = results_excel.get(match_clean)
-        live_score = find_live_score(match_clean, live_matches)
 
+        live_score = find_live_score(match_clean, live_matches)
         if live_score:
             actual = live_score
 
@@ -262,8 +276,8 @@ def player_details(name: str):
 
     <a href="/">⬅ Powrót</a>
 
-    <h2>👤 {name}</h2>
-    <h4>🏆 Punkty: {total}</h4>
+    <h2>{name}</h2>
+    <h4>Punkty: {total}</h4>
 
     <table class="table table-striped">
 
