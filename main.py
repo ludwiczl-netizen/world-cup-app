@@ -243,4 +243,3 @@ def player_details(name: str):
     """
 
     return html
-``
