@@ -63,27 +63,28 @@ def get_ranking():
             if isinstance(match, str) and match in results:
                 total += calc_points(pred, results[match])
 
+        # ✅ WYMUSZONY CZYSTY FORMAT
         ranking.append({
             "gracz": str(sheet),
             "punkty": int(total)
         })
 
+    # ✅ KLUCZOWA LINIA — usuwa wszystko co nie dict
+    ranking = [
+        r for r in ranking
+        if isinstance(r, dict)
+        and "gracz" in r
+        and "punkty" in r
+    ]
+
     ranking.sort(key=lambda x: x["punkty"], reverse=True)
+
     return ranking
 
 
 @app.get("/")
 def home(request: Request):
-    raw_ranking = get_ranking()
-
-    ranking = [
-        {
-            "gracz": str(r["gracz"]),
-            "punkty": int(r["punkty"])
-        }
-        for r in raw_ranking
-        if isinstance(r, dict) and "gracz" in r and "punkty" in r
-    ]
+    ranking = get_ranking()
 
     return templates.TemplateResponse("index.html", {
         "request": request,
