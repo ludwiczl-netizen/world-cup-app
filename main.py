@@ -1,4 +1,18 @@
-from fastapi import FastAPI, Requestfrom fastapi import Fast.iterrows():
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+import pandas as pd
+import urllib.parse
+
+app = FastAPI()
+FILE = "tabela zbiorcza z rankingiem.xlsx"
+
+
+# ===== WYNIKI =====
+def get_results():
+    df = pd.read_excel(FILE, sheet_name="Wyniki")
+    results = {}
+
+    for _, r in df.iterrows():
         m = r.get("Mecz")
         g1 = r.get("Gol 1")
         g2 = r.get("Gol 2")
@@ -18,7 +32,7 @@ def get_points(pred, actual):
         if p1 == a1 and p2 == a2:
             return 3, "✅", "green"
 
-        if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
+        if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 == a1 == a2):
             return 1, "➖", "orange"
 
         return 0, "❌", "red"
@@ -31,7 +45,6 @@ def get_points(pred, actual):
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
-
     ranking = []
 
     for sheet in xls.sheet_names:
@@ -43,19 +56,19 @@ def get_ranking():
         total = hits = 0
 
         for _, r in df.iterrows():
-            match = r.get("Mecz")
-            typ = r.get("Typ")
+            m = r.get("Mecz")
+            t = r.get("Typ")
 
-            if not isinstance(match, str):
+            if not isinstance(m, str):
                 continue
 
-            actual = results.get(match.strip())
+            actual = results.get(m.strip())
 
             if actual:
-                pts, _, _ = get_points(typ, actual)
-                total += pts
+                p, _, _ = get_points(t, actual)
+                total += p
 
-                if pts == 3:
+                if p == 3:
                     hits += 1
 
         ranking.append({
@@ -74,10 +87,10 @@ def home():
     rows = ""
 
     for i, r in enumerate(get_ranking(), 1):
-        safe_name = urllib.parse.quote(r["name"])
+        safe = urllib.parse.quote(r["name"])
 
         rows += f"""
-        <tr onclick="location.href='/gracz/{safe_name}'" style="cursor['name']}</td>
+        <tr onclick="location.href='/gracz/{safe}'" style="<td>{r['name']}</td>
             <td>{r['pts']}</td>
             <td>🎯 {r['hits']}</td>
         </tr>
@@ -85,11 +98,7 @@ def home():
 
     return f"""
     <html>
-    <head>
-    <meta name="viewport" content="width=device-width">
-    </head>
-
-    <body style="font-family:Arial;background:#f2f2f2">
+    <body style="font-family:Arial;background:#eee">
 
     <div style="max-width:500px;margin:auto">
 
@@ -100,7 +109,8 @@ def home():
     {rows}
     </table>
 
-    <br><a href="/admin">⚙️ Panel admin</a>
+    <br>
+    <a href="/admin">⚙️ Panel admin</a>
 
     </div>
 
@@ -123,41 +133,40 @@ def player(name: str):
 
     for _, r in df.iterrows():
 
-        match = r.get("Mecz")
-        typ = r.get("Typ")
+        m = r.get("Mecz")
+        t = r.get("Typ")
 
-        if not isinstance(match, str):
+        if not isinstance(m, str):
             continue
 
-        actual = results.get(match.strip())
+        actual = results.get(m.strip())
 
-        t1, t2 = [x.strip() for x in match.split("-")]
+        t1, t2 = [x.strip() for x in m.split("-")]
 
         if not actual:
             html += f"""
-            <div style="background:#eee;padding:10px;margin:5px;border-radius:8px">
-                {t1}<br>{t2}<br>-:-<br>TYP {typ}
+            <div style="background:#eee;padding:10px;margin:5px">
+                {t1} vs {t2} -:- TYP {t}
             </div>
             """
             continue
 
-        pts, sym, col = get_points(typ, actual)
+        p, sym, col = get_points(t, actual)
 
-        total += pts
-
-        if pts == 3:
+        total += p
+        if p == 3:
             hits += 1
-        elif pts == 1:
+        elif p == 1:
             mid += 1
         else:
             miss += 1
 
         html += f"""
-        <div style="background:white;padding:10px;margin:5px;border-radius:8px">
-            {t1}<br>{t2}<br>
+        <div style="background:white;padding:10px;margin:5px">
+            {t1} vs {t2}<br>
             <b>{actual[0]}:{actual[1]}</b><br>
-            TYP {typ}<br>
-            <span style="color:{col}">{sym} {pts}</span>
+            TYP {t}<br>
+            <span style="color:{col}">{sym} {p}</span>
         </div>
         """
 
@@ -166,7 +175,7 @@ def player(name: str):
 
     return f"""
     <html>
-    <body style="font-family:Arial;background:#eee">
+    <body>
 
     <div style="max-width:500px;margin:auto">
 
@@ -174,9 +183,7 @@ def player(name: str):
 
     <h3>{name} • {total} pkt</h3>
 
-    <div style="background:white;padding:10px;border-radius:8px">
-        🎯 {hits} | ➖ {mid} | ❌ {miss} | 📊 {acc}%
-    </div>
+    🎯 {hits} | ➖ {mid} | ❌ {miss} | 📊 {acc}%
 
     {html}
 
@@ -204,27 +211,28 @@ def admin():
         rows += f"""
         <tr>
             <td>{m}</td>
-            <td><input name="g1_{i}" value="{g1}" style="width:40px"></td>
-            <td><input name="g2_{i}" value="{g2}" style="width:40px"></td>
+            <td><input name="g1_{i}" value="{g1}"></td>
+            <td><input name="g2_{i}" value="{g2}"></td>
         </tr>
         """
 
     return f"""
-    <html><body style="font-family:Arial">
+    <html>
+    <body>
 
-    <h2>⚙️ Panel wyników</h2>
+    <h2>Panel wyników</h2>
 
     <form method="post">
-    <table border="1" cellpadding="5">
-    <tr><th>Mecz</th><th>Gol 1</th><th>Gol 2</th></tr>
+    <table border="1">
     {rows}
     </table>
 
     <br>
-    <button type="submit">💾 ZAPISZ</button>
+    <button type="submit">Zapisz</button>
     </form>
 
-    </body></html>
+    </body>
+    </html>
     """
 
 
@@ -240,26 +248,13 @@ async def save(request: Request):
         g1 = form.get(f"g1_{i}")
         g2 = form.get(f"g2_{i}")
 
-        if g1 != "":
+        if g1:
             df.at[i, "Gol 1"] = int(g1)
 
-        if g2 != "":
+        if g2:
             df.at[i, "Gol 2"] = int(g2)
 
     with pd.ExcelWriter(FILE, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         df.to_excel(writer, sheet_name="Wyniki", index=False)
 
     return RedirectResponse("/", status_code=303)
-from fastapi.responses import HTMLResponse, RedirectResponse
-import pandas as pd
-import urllib.parse
-
-app = FastAPI()
-FILE = "tabela zbiorcza z rankingiem.xlsx"
-
-
-# ===== WYNIKI =====
-def get_results():
-    df = pd.read_excel(FILE, sheet_name="Wyniki")
-    results = {}
-
