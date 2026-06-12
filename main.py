@@ -1,9 +1,4 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-import pandas as pd
-import requests
-
-app = FastAPI()
+from fastapi import FastAPIfrom fastapi import FastAPI()
 
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
@@ -44,10 +39,7 @@ def get_results():
 # ===== LIVE =====
 def get_live():
     try:
-        r = requests.get(
-            "https://sportscore.com/api/widget/matches/?sport=football",
-            timeout=5
-        )
+        r = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
         data = r.json()
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
     except:
@@ -101,12 +93,11 @@ def get_points(pred, actual):
         if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
         return 0, "❌", "red"
-
     except:
         return 0, "❌", "red"
 
 
-# ===== RANKING =====
+# ===== RANKING (z tie-break ✅)
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
@@ -120,6 +111,7 @@ def get_ranking():
 
         df = pd.read_excel(xls, sheet)
         total = 0
+        hits = 0
 
         for _, r in df.iterrows():
             match = r.get("Mecz")
@@ -138,9 +130,18 @@ def get_ranking():
                 pts, _, _ = get_points(typ, actual)
                 total += pts
 
-        out.append({"name": sheet, "pts": total})
+                if pts == 3:
+                    hits += 1
 
-    out.sort(key=lambda x: x["pts"], reverse=True)
+        out.append({
+            "name": sheet,
+            "pts": total,
+            "hits": hits
+        })
+
+    # ✅ sortowanie: pkt -> trafienia
+    out.sort(key=lambda x: (x["pts"], x["hits"]), reverse=True)
+
     return out
 
 
@@ -150,12 +151,14 @@ def home():
     data = get_ranking()
 
     rows = ""
+
     for i, r in enumerate(data, 1):
         rows += f"""
         <tr>
             <td>{i}</td>
-            <td><a href="/gracz/{r['name']}">{r['name']}</a></td>
-            <td class="pts">{r['pts']}</td>
+            <td>gracz/{r['name']}">{r['name']}</a></td>
+            <td><b>{r['pts']}</b></td>
+            <td style="color:green">🎯 {r['hits']}</td>
         </tr>
         """
 
@@ -177,11 +180,6 @@ def home():
 
     td {{padding:12px}}
 
-    .pts {{
-        font-size:20px;
-        font-weight:bold;
-    }}
-
     a {{
         text-decoration:none;
         color:black;
@@ -194,8 +192,19 @@ def home():
     <body>
 
     <div class="container">
+
     <h3>🏆 Ranking</h3>
-    <table>{rows}</table>
+
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Gracz</th>
+            <th>Pkt</th>
+            <th>Trafione</th>
+        </tr>
+        {rows}
+    </table>
+
     </div>
 
     </body>
@@ -216,7 +225,12 @@ def player(name: str):
     rows = ""
     total = 0
 
+    hits = 0
+    partial = 0
+    miss = 0
+
     for _, r in df.iterrows():
+
         match = r.get("Mecz")
         typ = r.get("Typ")
 
@@ -240,6 +254,14 @@ def player(name: str):
         pts, sym, col = get_points(typ, actual)
         total += pts
 
+        # ✅ statystyki
+        if pts == 3:
+            hits += 1
+        elif pts == 1:
+            partial += 1
+        else:
+            miss += 1
+
         t1, t2 = [x.strip() for x in match.split("-")]
 
         rows += f"""
@@ -260,10 +282,14 @@ def player(name: str):
         </div>
         """
 
+    total_matches = hits + partial + miss
+    accuracy = int((hits / total_matches) * 100) if total_matches else 0
+
     return f"""
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
+
     <style>
 
     body {{background:#eee;font-family:Arial;margin:0}}
@@ -284,6 +310,13 @@ def player(name: str):
         font-size:20px;
     }}
 
+    .stats {{
+        background:white;
+        border-radius:12px;
+        padding:12px;
+        margin-bottom:10px;
+    }}
+
     .card {{
         background:white;
         padding:14px;
@@ -301,12 +334,6 @@ def player(name: str):
     .pred {{
         font-size:18px;
         font-weight:bold;
-        color:#333;
-    }}
-
-    .live {{
-        color:red;
-        font-size:13px;
     }}
 
     .green {{color:green}}
@@ -318,6 +345,11 @@ def player(name: str):
         margin-right:6px;
     }}
 
+    a {{
+        color:white;
+        text-decoration:none;
+    }}
+
     </style>
     </head>
 
@@ -326,11 +358,18 @@ def player(name: str):
     <div class="container">
 
         <div class="header">
-            <a href="/" style="color:white;text-decoration:none">⬅ Powrót</a>
+            /⬅ Powrót</a>
         </div>
 
         <div class="header">
             {name} • {total} pkt
+        </div>
+
+        <div class="stats">
+            🎯 Trafione: <b>{hits}</b><br>
+            ⚖️ 1 pkt: <b>{partial}</b><br>
+            ❌ Błędne: <b>{miss}</b><br>
+            📊 Skuteczność: <b>{accuracy}%</b>
         </div>
 
         {rows}
@@ -340,3 +379,7 @@ def player(name: str):
     </body>
     </html>
     """
+
+from fastapi.responses import HTMLResponse
+import pandas as pd
+import requests
