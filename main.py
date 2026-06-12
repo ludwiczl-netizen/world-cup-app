@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 import pandas as pd
 import requests
 from difflib import SequenceMatcher
@@ -109,7 +109,6 @@ def get_live_match(match_name, matches):
         return None, ""
 
     for m in matches:
-
         if not isinstance(m, dict):
             continue
 
@@ -125,10 +124,9 @@ def get_live_match(match_name, matches):
         if not isinstance(h, str) or not isinstance(a, str):
             continue
 
-        cond1 = match_team(team1, h) and match_team(team2, a)
-        cond2 = match_team(team1, a) and match_team(team2, h)
+        if match_team(team1, h) and match_team(team2, a) or \
+           match_team(team1, a) and match_team(team2, h):
 
-        if cond1 or cond2:
             hs = home.get("score")
             as_ = away.get("score")
 
@@ -165,9 +163,7 @@ def get_ranking():
         if sheet in ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]:
             continue
 
-        name = sheet.strip()
         df = pd.read_excel(xls, sheet)
-
         total = hits = 0
 
         for _, r in df.iterrows():
@@ -189,7 +185,7 @@ def get_ranking():
                 if pts == 3:
                     hits += 1
 
-        data.append({"name": name, "pts": total, "hits": hits})
+        data.append({"name": sheet.strip(), "pts": total, "hits": hits})
 
     return sorted(data, key=lambda x: (x["pts"], x["hits"]), reverse=True)
 
@@ -212,25 +208,16 @@ def home():
 
     return f"""
     <html>
-    <head>
-    <meta name="viewport" content="width=device-width">
-    <style>
-    body {{background:#f2f2f2;font-family:Arial}}
-    .box {{max-width:500px;margin:auto;padding:10px}}
-    table {{width:100%;background:white;border-radius:10px}}
-    td,th {{padding:10px}}
-    a {{text-decoration:none;color:black;font-weight:bold}}
-    </style>
-    </head>
-
     <body>
-    <div class="box">
-    <h3>🏆 Ranking</h3>
-    <table>
+    <h2>🏆 Ranking</h2>
+    <table border="1">
     <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>
     {rows}
     </table>
-    </div>
+
+    <br>
+    <a href="/admin">⚙️ Panel admin</a>
+
     </body>
     </html>
     """
@@ -243,7 +230,6 @@ def player(name: str):
     name = urllib.parse.unquote(name)
 
     df = pd.read_excel(pd.ExcelFile(FILE), name)
-
     results = get_results()
     live = get_live()
 
@@ -261,79 +247,78 @@ def player(name: str):
         actual = results.get(match.strip())
         live_score, minute = get_live_match(match, live)
 
-        is_live = False
-
         if live_score:
             actual = live_score
-            is_live = True
 
-        t1, t2 = [x.strip() for x in match.split("-")]
-
-        # przyszły mecz
         if not actual:
-            html += f"""
-            <div style="background:#eee;padding:12px;margin:10px;border-radius:10px;color:#888;display:flex;justify-content:space-between">
-                <div>
-                    <div>{get_flag(t1)} {t1}</div>
-                    <div>{get_flag(t2)} {t2}</div>
-                </div>
-                <div>-:-<br>TYP {typ}</div>
-            </div>
-            """
             continue
 
         pts, sym, col = get_points(typ, actual)
         total += pts
 
-        if pts == 3:
-            hits += 1
-        elif pts == 1:
-            partial += 1
-        else:
-            miss += 1
+        html += f"<div>{match} → {actual[0]}:{actual[1]} ({sym} {pts})</div>"
 
-        live_style = "background:#ffeaea;border:2px solid red;" if is_live else "background:white;"
+    return f"<h3>{name} — {total} pkt</h3>{html}"
 
-        html += f"""
-        <div style="{live_style} padding:12px;margin:10px;border-radius:10px;display:flex;justify-content:space-between">
-            <div>
-                <div>{get_flag(t1)} {t1}</div>
-                <div>{get_flag(t2)} {t2}</div>
-            </div>
-            <div>
-                <div style="font-size:20px;font-weight:bold">{actual[0]}:{actual[1]}</div>
-                <div>TYP {typ}</div>
-                <div style="color:red">{minute if is_live else ""}</div>
-                <div style="color:{col}">{sym} {pts}</div>
-            </div>
-        </div>
+
+# ===== ADMIN =====
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+
+    df = pd.read_excel(FILE, sheet_name="Wyniki")
+
+    rows = ""
+
+    for i, r in df.iterrows():
+
+        match = r.get("Mecz")
+        g1 = "" if pd.isna(r.get("Gol 1")) else int(r.get("Gol 1"))
+        g2 = "" if pd.isna(r.get("Gol 2")) else int(r.get("Gol 2"))
+
+        rows += f"""
+        <tr>
+            <td>{match}</td>
+            <td><input name="g1_{i}" value="{g1}"></td>
+            <td><input name="g2_{i}" value="{g2}"></td>
+        </tr>
         """
-
-    total_matches = hits + partial + miss
-    acc = int(hits / total_matches * 100) if total_matches else 0
 
     return f"""
     <html>
-    <head>
-    <meta name="viewport" content="width=device-width">
-    <style>
-    body {{background:#eee;font-family:Arial}}
-    .box {{max-width:500px;margin:auto;padding:10px}}
-    .header {{background:black;color:white;padding:10px;border-radius:10px;margin-bottom:10px;text-align:center}}
-    </style>
-    </head>
-
     <body>
-    <div class="box">
-        <div class="header"><a href="/">⬅ Powrót</a></div>
-        <div class="header">{name} • {total} pkt</div>
 
-        <div style="background:white;padding:10px;margin-bottom:10px;border-radius:10px">
-            🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
-        </div>
+    <h2>Panel wyników</h2>
 
-        {html}
-    </div>
+    <form method="post">
+    <table border="1">
+    {rows}
+    </table>
+
+    <br>
+    <button type="submit">Zapisz</button>
+    </form>
+
     </body>
     </html>
     """
+
+
+@app.post("/admin")
+async def admin_save(request: Request):
+
+    form = await request.form()
+    df = pd.read_excel(FILE, sheet_name="Wyniki")
+
+    for i in df.index:
+        g1 = form.get(f"g1_{i}")
+        g2 = form.get(f"g2_{i}")
+
+        if g1:
+            df.at[i, "Gol 1"] = int(g1)
+        if g2:
+            df.at[i, "Gol 2"] = int(g2)
+
+    with pd.ExcelWriter(FILE, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+        df.to_excel(writer, sheet_name="Wyniki", index=False)
+
+    return RedirectResponse("/", status_code=303)
