@@ -7,6 +7,45 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
+# ===== NORMALIZACJA =====
+def normalize(text):
+    if not isinstance(text, str):
+        return ""
+    return text.lower()
+
+
+# ===== FLAGI =====
+def get_flag(team):
+    mapping = {
+        "polska": "pl", "niemcy": "de", "meksyk": "mx",
+        "kanada": "ca", "usa": "us", "paragwaj": "py",
+        "katar": "qa", "szwajcaria": "ch",
+        "brazylia": "br", "maroko": "ma",
+        "australia": "au", "turcja": "tr",
+        "korea": "kr", "czechy": "cz",
+        "holandia": "nl", "japonia": "jp",
+        "szwecja": "se", "tunezja": "tn",
+        "hiszpania": "es", "belgia": "be",
+        "egipt": "eg", "arabia": "sa",
+        "urugwaj": "uy", "iran": "ir",
+        "nowa zelandia": "nz", "francja": "fr",
+        "senegal": "sn", "norwegia": "no",
+        "argentyna": "ar", "algieria": "dz",
+        "austria": "at", "jordania": "jo",
+        "portugalia": "pt", "anglia": "gb",
+        "chorwacja": "hr", "ghana": "gh",
+        "panama": "pa", "kolumbia": "co",
+        "kongo": "cd"
+    }
+
+    t = normalize(team)
+
+    for k in mapping:
+        if k in t:
+            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" style="margin-right:6px">'
+    return ""
+
+
 # ===== WYNIKI =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
@@ -31,12 +70,9 @@ def get_points(pred, actual):
 
         if p1 == a1 and p2 == a2:
             return 3, "✅", "green"
-
         if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
-
         return 0, "❌", "red"
-
     except:
         return 0, "❌", "red"
 
@@ -155,7 +191,10 @@ def player(name: str):
         if not actual:
             html += f"""
             <div style="background:#eee;padding:10px;margin:5px;border-radius:8px">
-                {t1} vs {t2} -:- TYP {typ}
+                <div>{get_flag(t1)} {t1}</div>
+                <div>{get_flag(t2)} {t2}</div>
+                <div>-:-</div>
+                <div>TYP {typ}</div>
             </div>
             """
             continue
@@ -172,10 +211,13 @@ def player(name: str):
 
         html += f"""
         <div style="background:white;padding:10px;margin:5px;border-radius:8px">
-            {t1} vs {t2}<br>
-            <b>{actual[0]}:{actual[1]}</b><br>
-            TYP {typ}<br>
-            <span style="color:{col}">{sym} {pts}</span>
+            <div>{get_flag(t1)} {t1}</div>
+            <div>{get_flag(t2)} {t2}</div>
+
+            <div><b>{actual[0]}:{actual[1]}</b></div>
+            <div>TYP {typ}</div>
+
+            <div style="color:{col}">{sym} {pts}</div>
         </div>
         """
 
@@ -255,7 +297,6 @@ async def admin_save(request: Request):
     try:
         form = await request.form()
 
-        # ✅ wczytaj wszystkie arkusze
         xls = pd.ExcelFile(FILE)
         sheets = {}
 
@@ -264,7 +305,6 @@ async def admin_save(request: Request):
 
         df = sheets["Wyniki"]
 
-        # ✅ aktualizuj wyniki
         for i in df.index:
             g1 = form.get(f"g1_{i}")
             g2 = form.get(f"g2_{i}")
@@ -277,7 +317,6 @@ async def admin_save(request: Request):
 
         sheets["Wyniki"] = df
 
-        # ✅ zapis wszystkich arkuszy (NAJWAŻNIEJSZE!)
         with pd.ExcelWriter(FILE, engine="openpyxl") as writer:
             for name, data in sheets.items():
                 data.to_excel(writer, sheet_name=name, index=False)
