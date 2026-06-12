@@ -74,7 +74,18 @@ def get_ranking():
 
 @app.get("/")
 def home(request: Request):
-    ranking = get_ranking()
+    raw_ranking = get_ranking()
+
+    # ✅ CZYSZCZENIE DANYCH (jedyna poprawna wersja)
+    ranking = [
+        {
+            "gracz": str(r["gracz"]),
+            "punkty": int(r["punkty"])
+        }
+        for r in raw_ranking
+        if isinstance(r, dict) and "gracz" in r and "punkty" in r:
+    ]
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "ranking": ranking
