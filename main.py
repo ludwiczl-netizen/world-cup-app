@@ -8,7 +8,7 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ WYNIKI Z EXCEL (fallback)
+# ✅ EXCEL (pewne dane)
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -24,24 +24,36 @@ def get_results():
     return results
 
 
-# ✅ LIVE API (bezpieczny)
+# ✅ LIVE API (bezpieczne)
 def get_live_scores():
     try:
         url = "https://sportscore.com/api/widget/matches/?sport=football"
         res = requests.get(url, timeout=5)
         data = res.json()
-        return data.get("matches", [])
+
+        matches = data.get("matches", [])
+
+        # 🔥 filtr: tylko dict
+        return [m for m in matches if isinstance(m, dict)]
+
     except:
         return []
 
 
-# ✅ SMART MATCHING
+# ✅ SMART DOPASOWANIE
 def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
     for m in live_matches:
-        home = m.get("home", {}).get("name", "").lower()
-        away = m.get("away", {}).get("name", "").lower()
+
+        home = m.get("home", {}).get("name", "")
+        away = m.get("away", {}).get("name", "")
+
+        if not home or not away:
+            continue
+
+        home = home.lower()
+        away = away.lower()
 
         if home in match_name and away in match_name:
             hs = m.get("home", {}).get("score")
@@ -53,7 +65,7 @@ def find_live_score(match_name, live_matches):
     return None
 
 
-# ✅ PUNKTY
+# ✅ LICZENIE PUNKTÓW
 def calc_points(pred, actual):
     if not isinstance(pred, str):
         return 0
@@ -99,10 +111,10 @@ def get_ranking():
 
             match_clean = match.strip()
 
-            # ✅ najpierw Excel
+            # ✅ Excel wynik
             actual = results_excel.get(match_clean)
 
-            # ✅ potem LIVE
+            # ✅ LIVE nadpisuje
             live_score = find_live_score(match_clean, live_matches)
             if live_score:
                 actual = live_score
@@ -119,7 +131,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA (Flashscore)
+# ✅ STRONA GŁÓWNA
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -158,6 +170,10 @@ def home():
         background:gold;
         font-weight:bold;
     }}
+    a {{
+        text-decoration:none;
+        color:black;
+    }}
     </style>
     </head>
 
@@ -178,8 +194,8 @@ def home():
     <tbody>
     {rows}
     </tbody>
-
     </table>
+
     </div>
 
     </body>
@@ -246,8 +262,8 @@ def player_details(name: str):
 
     <a href="/">⬅ Powrót</a>
 
-    <h2>{name}</h2>
-    <h4>Punkty: {total}</h4>
+    <h2>👤 {name}</h2>
+    <h4>🏆 Punkty: {total}</h4>
 
     <table class="table table-striped">
 
@@ -268,6 +284,7 @@ def player_details(name: str):
 
     </body>
     </html>
+  
     """
 
     return html
