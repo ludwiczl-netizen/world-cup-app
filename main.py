@@ -8,13 +8,8 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ FLAGI JAKO OBRAZKI (DZIAŁA WSZĘDZIE)
+# ✅ FLAGI (obrazki)
 def get_flag_img(team_name):
-    if not isinstance(team_name, str):
-        return ""
-
-    name = team_name.lower().strip()
-
     mapping = {
         "polska": "pl",
         "niemcy": "de",
@@ -27,15 +22,16 @@ def get_flag_img(team_name):
         "włochy": "it",
         "meksyk": "mx",
         "rpa": "za",
-        "republika południowej afryki": "za",
         "korea południowa": "kr",
         "czechy": "cz"
     }
 
+    name = team_name.lower()
+
     for key in mapping:
         if key in name:
             code = mapping[key]
-            return f'<img src="https://flagcdn.com/24x18/{code}.png" style="margin-right:5px;">'
+            return f'<img src="https://flagcdn.com/24x18/{code}.png" class="flag">'
 
     return ""
 
@@ -61,19 +57,14 @@ def get_live_scores():
     try:
         url = "https://sportscore.com/api/widget/matches/?sport=football"
         res = requests.get(url, timeout=5)
-
-        if res.status_code != 200:
-            return []
-
         data = res.json()
-        matches = data.get("matches", [])
 
-        return [m for m in matches if isinstance(m, dict)]
+        return [m for m in data.get("matches", []) if isinstance(m, dict)]
     except:
         return []
 
 
-# ✅ MATCH + MINUTA
+# ✅ LIVE MATCH
 def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
@@ -81,24 +72,13 @@ def find_live_score(match_name, live_matches):
         if not isinstance(m, dict):
             continue
 
-        home_data = m.get("home")
-        away_data = m.get("away")
+        home = m.get("home", {}).get("name", "")
+        away = m.get("away", {}).get("name", "")
 
-        if not isinstance(home_data, dict) or not isinstance(away_data, dict):
-            continue
+        if home.lower() in match_name and away.lower() in match_name:
+            hs = m.get("home", {}).get("score")
+            as_ = m.get("away", {}).get("score")
 
-        home = home_data.get("name")
-        away = away_data.get("name")
-
-        if not isinstance(home, str) or not isinstance(away, str):
-            continue
-
-        home_l = home.lower()
-        away_l = away.lower()
-
-        if home_l in match_name and away_l in match_name:
-            hs = home_data.get("score")
-            as_ = away_data.get("score")
             minute = m.get("minute") or "LIVE"
 
             if isinstance(hs, int) and isinstance(as_, int):
@@ -113,9 +93,6 @@ def find_live_score(match_name, live_matches):
 
 # ✅ PUNKTY
 def calc_points(pred, actual):
-    if not isinstance(pred, str):
-        return 0
-
     try:
         p1, p2 = map(int, pred.replace("-", ":").split(":"))
         a1, a2 = actual
@@ -128,18 +105,17 @@ def calc_points(pred, actual):
             return 1
     except:
         return 0
-
     return 0
 
 
 # ✅ RANKING
 def get_ranking():
     xls = pd.ExcelFile(FILE, engine="openpyxl")
-    results_excel = get_results()
+    results = get_results()
     live_matches = get_live_scores()
 
     ranking = []
-    ignore = ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]
+    ignore = ["Wyniki", "Ranking"]
 
     for sheet in xls.sheet_names:
         if sheet in ignore:
@@ -155,123 +131,78 @@ def get_ranking():
             if not isinstance(match, str):
                 continue
 
-            match_clean = match.strip()
+            actual = results.get(match.strip())
 
-            actual = results_excel.get(match_clean)
-            live_data = find_live_score(match_clean, live_matches)
-
-            if live_data:
-                actual = live_data["score"]
+            live = find_live_score(match, live_matches)
+            if live:
+                actual = live["score"]
 
             if actual:
                 total += calc_points(pred, actual)
 
-        ranking.append({
-            "gracz": str(sheet),
-            "punkty": int(total)
-        })
+        ranking.append({"gracz": sheet, "pkt": total})
 
-    ranking.sort(key=lambda x: x["punkty"], reverse=True)
+    ranking.sort(key=lambda x: x["pkt"], reverse=True)
     return ranking
 
 
-# ✅ STRONA GŁÓWNA (LINK NAPRAWIONY)
+# ✅ STRONA GŁÓWNA
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
 
     rows = ""
-
     for i, r in enumerate(ranking, 1):
-        leader = "leader" if i == 1 else ""
-
         rows += f"""
-        <tr class="{leader}">
+        <tr>
             <td>{i}</td>
-            <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
-            <td><b>{r['punkty']}</b></td>
+            <td>{r['gracz']}</a></td>
+            <td>{r['pkt']}</td>
         </tr>
         """
 
-    html = f"""
-    <!DOCTYPE html>
+    return f"""
     <html>
-    <head>
-    <meta http-equiv="refresh" content="30">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <body style="font-family:Arial">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <h2>🏆 Ranking</h2>
 
-    <style>
-    body {{ background:#f4f6f9; }}
-    .card {{
-        background:white;
-        padding:20px;
-        border-radius:15px;
-        box-shadow:0 4px 15px rgba(0,0,0,0.1);
-    }}
-    .leader {{
-        background:gold;
-        font-weight:bold;
-    }}
-    </style>
-    </head>
-
-    <body class="p-3">
-    <div class="card">
-
-    <h3>🏆 Ranking LIVE</h3>
-
-    <table class="table">
-    <thead>
+    <table border="1" cellpadding="10">
     <tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>
-    </thead>
-
-    <tbody>
     {rows}
-    </tbody>
-
     </table>
 
-    </div>
     </body>
     </html>
     """
 
-    return html
 
-
-# ✅ SZCZEGÓŁY GRACZA (FLAGI + LIVE)
+# ✅ FLASH SCORE UI
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
-    results_excel = get_results()
-    live_matches = get_live_scores()
-
     df = pd.read_excel(xls, name)
 
-    rows = ""
+    results = get_results()
+    live_matches = get_live_scores()
+
+    matches_html = ""
     total = 0
 
     for _, row in df.iterrows():
-        match = row.get("Mecz")
-        pred = row.get("Typ")
+        match = row["Mecz"]
+        pred = row["Typ"]
 
-        if not isinstance(match, str):
-            continue
-
-        match_clean = match.strip()
-
-        actual = results_excel.get(match_clean)
-        live_data = find_live_score(match_clean, live_matches)
+        actual = results.get(match.strip())
+        live = find_live_score(match, live_matches)
 
         is_live = False
         minute = ""
 
-        if live_data:
-            actual = live_data["score"]
+        if live:
+            actual = live["score"]
             is_live = True
-            minute = live_data["minute"]
+            minute = live["minute"]
 
         if not actual:
             continue
@@ -279,62 +210,78 @@ def player_details(name: str):
         pts = calc_points(pred, actual)
         total += pts
 
-        teams = match.split("-")
-        t1 = teams[0].strip()
-        t2 = teams[1].strip() if len(teams) > 1 else ""
+        t1, t2 = [x.strip() for x in match.split("-")]
 
         flag1 = get_flag_img(t1)
         flag2 = get_flag_img(t2)
 
-        match_display = f"{flag1} {t1} - {flag2} {t2}"
+        score = f"{actual[0]}:{actual[1]}"
 
-        color = "red" if is_live else "black"
-        emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
+        matches_html += f"""
+        <div class="match">
 
-        rows += f"""
-        <tr style="color:{color}; font-weight:{'bold' if is_live else 'normal'}">
-            <td>{match_display}</td>
-            <td>{pred}</td>
-            <td>{actual[0]}:{actual[1]}</td>
-            <td>{pts} {emoji}</td>
-            <td>{"⏱ " + str(minute) if is_live else ""}</td>
-        </tr>
+            <div class="teams">
+
+                <div class="team">{flag1}{t1}</div>
+                <div class="team">{flag2}{t2}</div>
+
+            </div>
+
+            <div class="score">
+                {score}
+                <div class="live">{"🔴 "+str(minute)+"'" if is_live else ""}</div>
+                <div class="pts">{pts} pkt</div>
+            </div>
+
+        </div>
         """
 
-    html = f"""
-    <!DOCTYPE html>
+    return f"""
     <html>
     <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+
+    body {{background:#eee;font-family:Arial}}
+
+    .container {{max-width:500px;margin:auto}}
+
+    .header {{background:black;color:white;padding:15px}}
+
+    .match {{
+        background:white;
+        margin:10px 0;
+        padding:10px;
+        border-radius:10px;
+        display:flex;
+        justify-content:space-between
+    }}
+
+    .team {{display:flex;align-items:center}}
+    .flag {{margin-right:6px}}
+
+    .score {{text-align:right;font-weight:bold}}
+    .live {{color:red;font-size:12px}}
+    .pts {{font-size:11px;color:gray}}
+
+    </style>
     </head>
 
-    <body class="p-3">
+    <body>
 
-    <a href="/">⬅ Powrót</a>
+    <div class="container">
 
-    <h2>{name}</h2>
-    <h4>Punkty: {total}</h4>
+    <div class="header">
+        ⬅ Powrót
+    </div>
 
-    <table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Mecz</th>
-        <th>Typ</th>
-        <th>Wynik</th>
-        <th>Punkty</th>
-        <th>LIVE</th>
-    </tr>
-    </thead>
+    <div class="header">
+        {name} • {total} pkt
+    </div>
 
-    <tbody>
-    {rows}
-    </tbody>
+    {matches_html}
 
-    </table>
+    </div>
 
     </body>
     </html>
     """
-
-    return html
