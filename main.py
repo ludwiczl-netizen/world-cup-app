@@ -27,14 +27,21 @@ def get_flag(team):
     return ""
 
 
-# ===== EXCEL =====
+# ===== EXCEL (NAPRAWA NaN ✅) =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
-    return {
-        row["Mecz"].strip(): (int(row["Gol 1"]), int(row["Gol 2"]))
-        for _, row in df.iterrows()
-        if isinstance(row.get("Mecz"), str)
-    }
+    results = {}
+
+    for _, r in df.iterrows():
+        match = r.get("Mecz")
+        g1 = r.get("Gol 1")
+        g2 = r.get("Gol 2")
+
+        # ✅ KLUCZOWA NAPRAWA
+        if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
+            results[match.strip()] = (int(g1), int(g2))
+
+    return results
 
 
 # ===== LIVE =====
@@ -67,6 +74,7 @@ def get_live_match(name, matches):
 
                 if isinstance(hs, int) and isinstance(as_, int):
                     return (hs, as_), m.get("minute", "")
+
     return None, ""
 
 
@@ -98,6 +106,7 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
+
         total, hits = 0, 0
 
         for _, r in df.iterrows():
@@ -116,6 +125,7 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
+
                 if pts == 3:
                     hits += 1
 
@@ -144,8 +154,8 @@ def home():
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-
     <style>
+
     body {{background:#f2f2f2;font-family:Arial;margin:0}}
 
     .container {{
@@ -158,12 +168,10 @@ def home():
         width:100%;
         background:white;
         border-radius:10px;
-        overflow:hidden;
     }}
 
     td, th {{
         padding:12px;
-        text-align:left;
     }}
 
     a {{
@@ -171,8 +179,8 @@ def home():
         font-weight:bold;
         color:black;
     }}
-    </style>
 
+    </style>
     </head>
 
     <body>
@@ -302,7 +310,6 @@ def player(name: str):
     .pred {{
         font-size:16px;
         font-weight:bold;
-        color:#333;
     }}
 
     .flag {{
