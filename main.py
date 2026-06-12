@@ -37,7 +37,6 @@ def get_live_scores():
         matches = data.get("matches", [])
 
         return [m for m in matches if isinstance(m, dict)]
-
     except:
         return []
 
@@ -47,7 +46,6 @@ def find_live_score(match_name, live_matches):
     match_name = match_name.lower()
 
     for m in live_matches:
-
         if not isinstance(m, dict):
             continue
 
@@ -146,7 +144,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA
+# ✅ STRONA GŁÓWNA (NAPRAWIONE LINKI!!!)
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -159,7 +157,7 @@ def home():
         rows += f"""
         <tr class="{leader}">
             <td>{i}</td>
-            <td>/gracz/{r['gracz']}{r['gracz']}</a></td>
+            <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
             <td><b>{r['punkty']}</b></td>
         </tr>
         """
@@ -189,17 +187,13 @@ def home():
     </head>
 
     <body class="p-3">
-
     <div class="card">
+
     <h3>🏆 Ranking LIVE</h3>
 
     <table class="table">
     <thead>
-    <tr>
-        <th>#</th>
-        <th>Gracz</th>
-        <th>Punkty</th>
-    </tr>
+    <tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>
     </thead>
 
     <tbody>
@@ -207,8 +201,8 @@ def home():
     </tbody>
 
     </table>
-    </div>
 
+    </div>
     </body>
     </html>
     """
@@ -216,7 +210,7 @@ def home():
     return html
 
 
-# ✅ SZCZEGÓŁY GRACZA (🔥 LIVE highlight)
+# ✅ SZCZEGÓŁY GRACZA (LIVE 🔴 + minuta)
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
@@ -255,7 +249,6 @@ def player_details(name: str):
         total += pts
 
         emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
-
         color = "red" if is_live else "black"
 
         rows += f"""
@@ -263,8 +256,8 @@ def player_details(name: str):
             <td>{match}</td>
             <td>{pred}</td>
             <td>{actual[0]}:{actual[1]}</td>
-            <td><b>{pts}</b> {emoji}</td>
-            <td>{'⏱ ' + str(minute) if is_live else ''}</td>
+            <td>{pts} {emoji}</td>
+            <td>{"⏱ " + str(minute) if is_live else ""}</td>
         </tr>
         """
 
@@ -279,13 +272,12 @@ def player_details(name: str):
 
     <body class="p-3">
 
-    /⬅ Powrót</a>
+    <a href="/">⬅ Powrót</a>
 
     <h2>{name}</h2>
     <h4>Punkty: {total}</h4>
 
     <table class="table table-striped">
-
     <thead>
     <tr>
         <th>Mecz</th>
@@ -299,7 +291,6 @@ def player_details(name: str):
     <tbody>
     {rows}
     </tbody>
-
     </table>
 
     </body>
@@ -308,4 +299,5 @@ def player_details(name: str):
     """
 
     return html
+
     return html
