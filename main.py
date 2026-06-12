@@ -1,15 +1,16 @@
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 import pandas as pd
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
 
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
+# ✅ WYNIKI
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
+
     results = {}
 
     for _, row in df.iterrows():
@@ -23,6 +24,7 @@ def get_results():
     return results
 
 
+# ✅ PUNKTY
 def calc_points(pred, actual):
     if not isinstance(pred, str):
         return 0
@@ -43,6 +45,7 @@ def calc_points(pred, actual):
     return 0
 
 
+# ✅ RANKING
 def get_ranking():
     xls = pd.ExcelFile(FILE, engine="openpyxl")
     results = get_results()
@@ -57,6 +60,7 @@ def get_ranking():
         df = pd.read_excel(xls, sheet)
 
         total = 0
+
         for _, row in df.iterrows():
             match = row.get("Mecz")
             pred = row.get("Typ")
@@ -64,42 +68,27 @@ def get_ranking():
             if isinstance(match, str) and match in results:
                 total += calc_points(pred, results[match])
 
-        # ✅ TU jest klucz – zawsze dict
-        item = {
+        ranking.append({
             "gracz": str(sheet),
             "punkty": int(total)
-        }
+        })
 
-        ranking.append(item)
-
-    # ✅ TU drugie zabezpieczenie
-    clean = []
-    for r in ranking:
-        if type(r) is dict:
-            if "gracz" in r and "punkty" in r:
-                clean.append({
-                    "gracz": str(r["gracz"]),
-                    "punkty": int(r["punkty"])
-                })
-
-    clean.sort(key=lambda x: x["punkty"], reverse=True)
-
-    return clean
+    ranking.sort(key=lambda x: x["punkty"], reverse=True)
+    return ranking
 
 
-from fastapi.responses import HTMLResponse
-
+# ✅ STRONA GŁÓWNA
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
 
-    # ✅ generujemy HTML ręcznie (bez Jinja)
     rows = ""
+
     for i, r in enumerate(ranking, 1):
         rows += f"""
         <tr>
             <td>{i}</td>
-            <td>{r['gracz']}</td>
+            <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
             <td><b>{r['punkty']}</b></td>
         </tr>
         """
@@ -114,6 +103,7 @@ def home():
     </head>
 
     <body class="p-3">
+
     <h2>🏆 Ranking MŚ 2026</h2>
 
     <table class="table table-striped">
@@ -130,6 +120,79 @@ def home():
     </tbody>
 
     </table>
+
+    </body>
+    </html>
+    """
+
+    return html
+
+
+# ✅ SZCZEGÓŁY GRACZA
+@app.get("/gracz/{name}", response_class=HTMLResponse)
+def player_details(name: str):
+    xls = pd.ExcelFile(FILE, engine="openpyxl")
+    results = get_results()
+
+    df = pd.read_excel(xls, name)
+
+    rows = ""
+    total = 0
+
+    for _, row in df.iterrows():
+        match = row.get("Mecz")
+        pred = row.get("Typ")
+
+        if isinstance(match, str) and match in results:
+            actual = results[match]
+            pts = calc_points(pred, actual)
+            total += pts
+
+            # ✅ kolory punktów
+            color = "green" if pts == 3 else "orange" if pts == 1 else "red"
+
+            rows += f"""
+            <tr>
+                <td>{match.replace("-", " vs ")}</td>
+                <td>{pred}</td>
+                <td>{actual[0]}:{actual[1]}</td>
+                <td style="color:{color}"><b>{pts}</b></td>
+            </tr>
+            """
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{name}</title>
+    </head>
+
+    <body class="p-3">
+
+    <a href="/">⬅ Powrót</a>
+
+    <h2>👤 {name}</h2>
+    <h4>🏆 Punkty: {total}</h4>
+
+    <table class="table table-striped">
+
+    <thead>
+    <tr>
+        <th>Mecz</th>
+        <th>Typ</th>
+        <th>Wynik</th>
+        <th>Punkty</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    {rows}
+    </tbody>
+
+    </table>
+
     </body>
     </html>
     """
