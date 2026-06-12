@@ -4,10 +4,10 @@ import pandas as pd
 import requests
 
 app = FastAPI()
-
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
+# ===== FLAGI =====
 def get_flag(team):
     mapping = {
         "polska": "pl",
@@ -27,41 +27,35 @@ def get_flag(team):
     return ""
 
 
+# ===== EXCEL =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
-    results = {}
-
-    for _, r in df.iterrows():
-        if isinstance(r.get("Mecz"), str) and pd.notna(r.get("Gol 1")):
-            results[r["Mecz"].strip()] = (int(r["Gol 1"]), int(r["Gol 2"]))
-
-    return results
+    return {
+        row["Mecz"].strip(): (int(row["Gol 1"]), int(row["Gol 2"]))
+        for _, row in df.iterrows()
+        if isinstance(row.get("Mecz"), str)
+    }
 
 
+# ===== LIVE =====
 def get_live():
     try:
-        r = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
-        data = r.json()
+        res = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
+        data = res.json()
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
     except:
         return []
 
 
 def get_live_match(name, matches):
-    if not isinstance(name, str):
-        return None
-
-    name = name.lower()
+    name = str(name).lower()
 
     for m in matches:
         if not isinstance(m, dict):
             continue
 
-        home = m.get("home")
-        away = m.get("away")
-
-        if not isinstance(home, dict) or not isinstance(away, dict):
-            continue
+        home = m.get("home", {})
+        away = m.get("away", {})
 
         h = home.get("name")
         a = away.get("name")
@@ -72,14 +66,11 @@ def get_live_match(name, matches):
                 as_ = away.get("score")
 
                 if isinstance(hs, int) and isinstance(as_, int):
-                    return {
-                        "score": (hs, as_),
-                        "minute": m.get("minute") or ""
-                    }
-
-    return None
+                    return (hs, as_), m.get("minute", "")
+    return None, ""
 
 
+# ===== PUNKTY =====
 def get_points(pred, actual):
     try:
         p1, p2 = map(int, str(pred).replace("-", ":").split(":"))
@@ -94,20 +85,20 @@ def get_points(pred, actual):
         return 0, "❌", "red"
 
 
+# ===== RANKING =====
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
     live = get_live()
 
-    out = []
+    ranking = []
 
     for sheet in xls.sheet_names:
         if sheet in ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]:
             continue
 
         df = pd.read_excel(xls, sheet)
-        total = 0
-        hits = 0
+        total, hits = 0, 0
 
         for _, r in df.iterrows():
             match = r.get("Mecz")
@@ -117,10 +108,10 @@ def get_ranking():
                 continue
 
             actual = results.get(match.strip())
-            live_data = get_live_match(match, live)
+            live_score, _ = get_live_match(match, live)
 
-            if live_data:
-                actual = live_data["score"]
+            if live_score:
+                actual = live_score
 
             if actual:
                 pts, _, _ = get_points(typ, actual)
@@ -128,12 +119,12 @@ def get_ranking():
                 if pts == 3:
                     hits += 1
 
-        out.append({"name": sheet, "pts": total, "hits": hits})
+        ranking.append({"name": sheet, "pts": total, "hits": hits})
 
-    out.sort(key=lambda x: (x["pts"], x["hits"]), reverse=True)
-    return out
+    return sorted(ranking, key=lambda x: (x["pts"], x["hits"]), reverse=True)
 
 
+# ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
 def home():
     data = get_ranking()
@@ -151,20 +142,57 @@ def home():
 
     return f"""
     <html>
-    <body style="font-family:Arial">
+    <head>
+    <meta name="viewport" content="width=device-width">
 
-    <h2>🏆 Ranking</h2>
+    <style>
+    body {{background:#f2f2f2;font-family:Arial;margin:0}}
 
-    <table border="1" cellpadding="8">
-    <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>Trafione</th></tr>
+    .container {{
+        max-width:500px;
+        margin:auto;
+        padding:10px;
+    }}
+
+    table {{
+        width:100%;
+        background:white;
+        border-radius:10px;
+        overflow:hidden;
+    }}
+
+    td, th {{
+        padding:12px;
+        text-align:left;
+    }}
+
+    a {{
+        text-decoration:none;
+        font-weight:bold;
+        color:black;
+    }}
+    </style>
+
+    </head>
+
+    <body>
+
+    <div class="container">
+    <h3>🏆 Ranking</h3>
+
+    <table>
+    <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>Trafienia</th></tr>
     {rows}
     </table>
+
+    </div>
 
     </body>
     </html>
     """
 
 
+# ===== PLAYER =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
@@ -174,10 +202,8 @@ def player(name: str):
     results = get_results()
     live = get_live()
 
-    rows = ""
-    total = 0
-
-    hits = partial = miss = 0
+    matches_html = ""
+    total, hits, partial, miss = 0, 0, 0, 0
 
     for _, r in df.iterrows():
         match = r.get("Mecz")
@@ -187,13 +213,10 @@ def player(name: str):
             continue
 
         actual = results.get(match.strip())
-        live_data = get_live_match(match, live)
+        live_score, minute = get_live_match(match, live)
 
-        minute = ""
-
-        if live_data:
-            actual = live_data["score"]
-            minute = live_data["minute"]
+        if live_score:
+            actual = live_score
 
         if not actual:
             continue
@@ -210,35 +233,112 @@ def player(name: str):
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
-        rows += f"""
-        <div style="border:1px solid #ccc;margin:10px;padding:10px">
-            <div>{get_flag(t1)} {t1}</div>
-            <div>{get_flag(t2)} {t2}</div>
-            <div><b>{actual[0]}:{actual[1]}</b></div>
-            <div>TYP: {typ}</div>
-            <div style="color:{col}">{sym} {pts} pkt</div>
-            <div style="color:red">{minute}</div>
+        matches_html += f"""
+        <div class="match">
+
+            <div>
+                <div>{get_flag(t1)} {t1}</div>
+                <div>{get_flag(t2)} {t2}</div>
+            </div>
+
+            <div class="right">
+                <div class="score">{actual[0]}:{actual[1]}</div>
+                <div class="pred">TYP {typ}</div>
+                <div class="live">{minute}</div>
+                <div class="{col}">{sym} {pts} pkt</div>
+            </div>
+
         </div>
         """
 
     total_matches = hits + partial + miss
-    acc = int((hits / total_matches) * 100) if total_matches else 0
+    accuracy = int(hits / total_matches * 100) if total_matches else 0
 
     return f"""
     <html>
-    <body style="font-family:Arial">
+    <head>
+    <meta name="viewport" content="width=device-width">
 
-    <h2><a href="/">⬅ Powrót</a></h2>
+    <style>
 
-    <h3>{name} • {total} pkt</h3>
+    body {{background:#eee;font-family:Arial;margin:0}}
 
-    <div>
-        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
+    .container {{
+        max-width:500px;
+        margin:auto;
+        padding:10px;
+    }}
+
+    .header {{
+        background:#111;
+        color:white;
+        padding:12px;
+        border-radius:10px;
+        text-align:center;
+        margin-bottom:10px;
+    }}
+
+    .stats {{
+        background:white;
+        padding:10px;
+        border-radius:10px;
+        margin-bottom:10px;
+    }}
+
+    .match {{
+        background:white;
+        padding:12px;
+        border-radius:10px;
+        margin-bottom:10px;
+        display:flex;
+        justify-content:space-between;
+    }}
+
+    .score {{
+        font-size:22px;
+        font-weight:bold;
+    }}
+
+    .pred {{
+        font-size:16px;
+        font-weight:bold;
+        color:#333;
+    }}
+
+    .flag {{
+        margin-right:6px;
+    }}
+
+    .green {{color:green}}
+    .orange {{color:orange}}
+    .red {{color:red}}
+
+    a {{color:white;text-decoration:none}}
+
+    </style>
+
+    </head>
+
+    <body>
+
+    <div class="container">
+
+    <div class="header">
+        <a href="/">⬅ Powrót</a>
     </div>
 
-    {rows}
+    <div class="header">
+        {name} • {total} pkt
+    </div>
+
+    <div class="stats">
+        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {accuracy}%
+    </div>
+
+    {matches_html}
+
+    </div>
 
     </body>
-
     </html>
     """
