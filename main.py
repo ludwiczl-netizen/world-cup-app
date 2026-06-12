@@ -8,7 +8,7 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ FLAGI (obrazki – działają wszędzie)
+# ✅ FLAGI
 def get_flag_img(team):
     mapping = {
         "polska": "pl",
@@ -33,7 +33,7 @@ def get_flag_img(team):
 
     for k in mapping:
         if k in name:
-            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" style="margin-right:6px;">'
+            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
 
     return ""
 
@@ -41,6 +41,7 @@ def get_flag_img(team):
 # ✅ EXCEL
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
+
     results = {}
 
     for _, row in df.iterrows():
@@ -54,27 +55,27 @@ def get_results():
     return results
 
 
-# ✅ LIVE API (SAFE)
+# ✅ LIVE API
 def get_live_scores():
     try:
-        url = "https://sportscore.com/api/widget/matches/?sport=football"
-        res = requests.get(url, timeout=5)
+        res = requests.get(
+            "https://sportscore.com/api/widget/matches/?sport=football",
+            timeout=5
+        )
 
         if res.status_code != 200:
             return []
 
         data = res.json()
-
         matches = data.get("matches", [])
 
-        # 🔥 tylko dicty
         return [m for m in matches if isinstance(m, dict)]
 
     except:
         return []
 
 
-# ✅ SAFE LIVE MATCH
+# ✅ SAFE LIVE
 def find_live_score(match_name, live_matches):
     if not isinstance(match_name, str):
         return None
@@ -86,22 +87,23 @@ def find_live_score(match_name, live_matches):
         if not isinstance(m, dict):
             continue
 
-        home_data = m.get("home")
-        away_data = m.get("away")
+        home = m.get("home")
+        away = m.get("away")
 
-        if not isinstance(home_data, dict) or not isinstance(away_data, dict):
+        if not isinstance(home, dict) or not isinstance(away, dict):
             continue
 
-        home = home_data.get("name")
-        away = away_data.get("name")
+        h = home.get("name")
+        a = away.get("name")
 
-        if not isinstance(home, str) or not isinstance(away, str):
+        if not isinstance(h, str) or not isinstance(a, str):
             continue
 
-        if home.lower() in match_name and away.lower() in match_name:
+        if h.lower() in match_name and a.lower() in match_name:
 
-            hs = home_data.get("score")
-            as_ = away_data.get("score")
+            hs = home.get("score")
+            as_ = away.get("score")
+
             minute = m.get("minute") or "LIVE"
 
             if isinstance(hs, int) and isinstance(as_, int):
@@ -129,7 +131,6 @@ def calc_points(pred, actual):
             return 1
         if p1 == p2 and a1 == a2:
             return 1
-
     except:
         return 0
 
@@ -140,7 +141,7 @@ def calc_points(pred, actual):
 def get_ranking():
     xls = pd.ExcelFile(FILE, engine="openpyxl")
     results = get_results()
-    live_matches = get_live_scores()
+    live = get_live_scores()
 
     ranking = []
 
@@ -149,7 +150,6 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
-
         total = 0
 
         for _, row in df.iterrows():
@@ -161,23 +161,20 @@ def get_ranking():
 
             actual = results.get(match.strip())
 
-            live = find_live_score(match, live_matches)
-            if live:
-                actual = live["score"]
+            live_data = find_live_score(match, live)
+            if live_data:
+                actual = live_data["score"]
 
             if actual:
                 total += calc_points(pred, actual)
 
-        ranking.append({
-            "gracz": sheet,
-            "pkt": total
-        })
+        ranking.append({"gracz": sheet, "pkt": total})
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
     return ranking
 
 
-# ✅ HOME (link działa!)
+# ✅ HOME (RESPONSIVE)
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -188,35 +185,53 @@ def home():
         rows += f"""
         <tr>
             <td>{i}</td>
-            <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
-            <td><b>{r['pkt']}</b></td>
+            <td>/gracz/{r['gracz']}{r['gracz']}</a></td>
+            <td class="pts">{r['pkt']}</td>
         </tr>
         """
 
     return f"""
     <html>
     <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <style>
-    body {{ font-family: Arial; background:#f4f4f4 }}
-    table {{ background:white; border-radius:10px }}
+    body {{font-family:Arial;background:#eee;margin:0}}
+
+    .container {{max-width:500px;margin:auto;padding:10px}}
+
+    table {{
+        width:100%;
+        background:white;
+        border-radius:10px;
+        overflow:hidden;
+    }}
+
+    td {{padding:10px}}
+    .pts {{font-weight:bold;font-size:18px}}
+
+    a {{text-decoration:none;color:black}}
     </style>
     </head>
 
     <body>
 
-    <h2>🏆 Ranking</h2>
+    <div class="container">
 
-    <table cellpadding="10">
-    <tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>
+    <h3>🏆 Ranking</h3>
+
+    <table>
     {rows}
     </table>
+
+    </div>
 
     </body>
     </html>
     """
 
 
-# ✅ FLASHSCORE VIEW
+# ✅ PLAYER (FLASHSCORE MOBILE PRO)
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
@@ -258,12 +273,12 @@ def player(name: str):
         <div class="match">
 
             <div class="teams">
-                <div>{get_flag_img(t1)}{t1}</div>
-                <div>{get_flag_img(t2)}{t2}</div>
+                <div class="team">{get_flag_img(t1)}{t1}</div>
+                <div class="team">{get_flag_img(t2)}{t2}</div>
             </div>
 
-            <div class="score">
-                {actual[0]}:{actual[1]}
+            <div class="scoreBox">
+                <div class="score">{actual[0]}:{actual[1]}</div>
                 <div class="live">{'🔴 '+str(minute) if is_live else ''}</div>
                 <div class="points">{pts} pkt</div>
             </div>
@@ -274,48 +289,76 @@ def player(name: str):
     return f"""
     <html>
     <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
-    body {{ background:#eee; font-family:Arial }}
 
-    .container {{ max-width:500px; margin:auto }}
+    body {{
+        background:#f2f2f2;
+        font-family:Arial;
+        margin:0;
+    }}
+
+    .container {{
+        max-width:600px;
+        margin:auto;
+        padding:10px;
+    }}
 
     .header {{
-        background:black;
+        background:#111;
         color:white;
-        padding:15px;
+        padding:14px;
+        border-radius:10px;
         margin-bottom:10px;
+    }}
+
+    .mainScore {{
+        font-size:22px;
+        font-weight:bold;
+        text-align:center;
     }}
 
     .match {{
         background:white;
+        padding:14px;
+        border-radius:12px;
         margin-bottom:10px;
-        padding:10px;
-        border-radius:10px;
         display:flex;
         justify-content:space-between;
+        align-items:center;
     }}
 
-    .teams div {{
-        margin-bottom:5px;
+    .team {{
+        display:flex;
+        align-items:center;
+        margin-bottom:6px;
+        font-size:16px;
+    }}
+
+    .flag {{
+        width:24px;
+        margin-right:8px;
     }}
 
     .score {{
-        text-align:right;
+        font-size:24px;
+        font-weight:bold;
+    }}
+
+    .points {{
+        font-size:15px;
+        color:#007bff;
         font-weight:bold;
     }}
 
     .live {{
         color:red;
-        font-size:12px;
+        font-size:13px;
+        font-weight:bold;
     }}
 
-    .points {{
-        font-size:11px;
-        color:gray;
-    }}
-
-    a {{ color:white; text-decoration:none }}
+    a {{color:white;text-decoration:none}}
 
     </style>
     </head>
@@ -324,18 +367,19 @@ def player(name: str):
 
     <div class="container">
 
-    <div class="header">
-        <a href="/">⬅ Powrót</a>
-    </div>
+        <div class="header">
+            /⬅ Powrót</a>
+        </div>
 
-    <div class="header">
-        {name} • {total} pkt
-    </div>
+        <div class="header mainScore">
+            {name} • {total} pkt
+        </div>
 
-    {matches_html}
+        {matches_html}
 
     </div>
 
     </body>
     </html>
     """
+``
