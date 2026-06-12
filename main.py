@@ -1,68 +1,9 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Requestfrom fastapi importfrom fastapi.responses import HTMLResponse, RedirectResponse
 import pandas as pd
-import requests
-from difflib import SequenceMatcher
 import urllib.parse
 
 app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
-
-
-# ===== NORMALIZACJA =====
-def normalize(text):
-    if not isinstance(text, str):
-        return ""
-    return (
-        text.lower()
-        .replace("ł", "l").replace("ś", "s")
-        .replace("ą", "a").replace("ę", "e")
-        .replace("ż", "z").replace("ź", "z")
-        .replace("ó", "o").replace("ń", "n")
-        .replace("&", " ")
-    )
-
-
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
-
-
-def words(text):
-    return normalize(text).replace("-", " ").split()
-
-
-# ===== FLAGI =====
-def get_flag(team):
-    mapping = {
-        "polska": "pl", "niemcy": "de", "meksyk": "mx",
-        "kanada": "ca", "usa": "us", "paragwaj": "py",
-        "katar": "qa", "szwajcaria": "ch",
-        "brazylia": "br", "maroko": "ma",
-        "australia": "au", "turcja": "tr",
-        "bosnia": "ba", "hercegowina": "ba",
-        "curacao": "cw", "korea": "kr",
-        "czechy": "cz", "holandia": "nl",
-        "japonia": "jp", "szwecja": "se",
-        "tunezja": "tn", "hiszpania": "es",
-        "belgia": "be", "egipt": "eg",
-        "arabia": "sa", "urugwaj": "uy",
-        "iran": "ir", "nowa zelandia": "nz",
-        "francja": "fr", "senegal": "sn",
-        "irak": "iq", "norwegia": "no",
-        "argentyna": "ar", "algieria": "dz",
-        "austria": "at", "jordania": "jo",
-        "portugalia": "pt", "anglia": "gb",
-        "chorwacja": "hr", "ghana": "gh",
-        "panama": "pa", "kolumbia": "co",
-        "kongo": "cd"
-    }
-
-    t = normalize(team)
-
-    for k in mapping:
-        if k in t:
-            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" style="margin-right:6px">'
-    return ""
 
 
 # ===== WYNIKI =====
@@ -79,61 +20,6 @@ def get_results():
             results[match.strip()] = (int(g1), int(g2))
 
     return results
-
-
-# ===== LIVE =====
-def get_live():
-    try:
-        r = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
-        data = r.json()
-        return [m for m in data.get("matches", []) if isinstance(m, dict)]
-    except:
-        return []
-
-
-def match_team(excel_team, api_team):
-    for w1 in words(excel_team):
-        for w2 in words(api_team):
-            if similar(w1, w2) > 0.7:
-                return True
-    return False
-
-
-def get_live_match(match_name, matches):
-    if not isinstance(match_name, str):
-        return None, ""
-
-    try:
-        team1, team2 = [x.strip() for x in match_name.split("-")]
-    except:
-        return None, ""
-
-    for m in matches:
-        if not isinstance(m, dict):
-            continue
-
-        home = m.get("home")
-        away = m.get("away")
-
-        if not isinstance(home, dict) or not isinstance(away, dict):
-            continue
-
-        h = home.get("name")
-        a = away.get("name")
-
-        if not isinstance(h, str) or not isinstance(a, str):
-            continue
-
-        if match_team(team1, h) and match_team(team2, a) or \
-           match_team(team1, a) and match_team(team2, h):
-
-            hs = home.get("score")
-            as_ = away.get("score")
-
-            if isinstance(hs, int) and isinstance(as_, int):
-                return (hs, as_), m.get("minute", "")
-
-    return None, ""
 
 
 # ===== PUNKTY =====
@@ -155,7 +41,6 @@ def get_points(pred, actual):
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
-    live = get_live()
 
     data = []
 
@@ -164,6 +49,7 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
+
         total = hits = 0
 
         for _, r in df.iterrows():
@@ -174,10 +60,6 @@ def get_ranking():
                 continue
 
             actual = results.get(match.strip())
-            live_score, _ = get_live_match(match, live)
-
-            if live_score:
-                actual = live_score
 
             if actual:
                 pts, _, _ = get_points(typ, actual)
@@ -197,6 +79,7 @@ def home():
     rows = ""
     for i, r in enumerate(get_ranking(), 1):
         safe = urllib.parse.quote(r['name'])
+
         rows += f"""
         <tr>
             <td>{i}</td>
@@ -208,9 +91,22 @@ def home():
 
     return f"""
     <html>
+    <head>
+    <meta name="viewport" content="width=device-width">
+    <style>
+    body {{background:#f2f2f2;font-family:Arial;margin:0}}
+    .box {{max-width:500px;margin:auto;padding:10px}}
+    table {{width:100%;background:white;border-radius:10px}}
+    td, th {{padding:12px}}
+    a {{text-decoration:none;color:black;font-weight:bold}}
+    </style>
+    </head>
+
     <body>
-    <h2>🏆 Ranking</h2>
-    <table border="1">
+    <div class="box">
+    <h3>🏆 Ranking</h3>
+
+    <table>
     <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>
     {rows}
     </table>
@@ -218,6 +114,7 @@ def home():
     <br>
     <a href="/admin">⚙️ Panel admin</a>
 
+    </div>
     </body>
     </html>
     """
@@ -229,9 +126,13 @@ def player(name: str):
 
     name = urllib.parse.unquote(name)
 
-    df = pd.read_excel(pd.ExcelFile(FILE), name)
+    xls = pd.ExcelFile(FILE)
+
+    if name not in xls.sheet_names:
+        return "<h2>❌ Nie znaleziono gracza</h2>"
+
+    df = pd.read_excel(xls, name)
     results = get_results()
-    live = get_live()
 
     html = ""
     total = hits = partial = miss = 0
@@ -245,20 +146,63 @@ def player(name: str):
             continue
 
         actual = results.get(match.strip())
-        live_score, minute = get_live_match(match, live)
 
-        if live_score:
-            actual = live_score
+        t1, t2 = [x.strip() for x in match.split("-")]
 
         if not actual:
+            html += f"""
+            <div style="background:#eee;padding:10px;margin:5px;border-radius:8px">
+                {t1} vs {t2} -:- TYP {typ}
+            </div>
+            """
             continue
 
         pts, sym, col = get_points(typ, actual)
+
         total += pts
+        if pts == 3:
+            hits += 1
+        elif pts == 1:
+            partial += 1
+        else:
+            miss += 1
 
-        html += f"<div>{match} → {actual[0]}:{actual[1]} ({sym} {pts})</div>"
+        html += f"""
+        <div style="background:white;padding:10px;margin:5px;border-radius:8px">
+            {t1} vs {t2}<br>
+            <b>{actual[0]}:{actual[1]}</b><br>
+            TYP {typ}<br>
+            <span style="color:{col}">{sym} {pts}</span>
+        </div>
+        """
 
-    return f"<h3>{name} — {total} pkt</h3>{html}"
+    total_matches = hits + partial + miss
+    acc = int(hits / total_matches * 100) if total_matches else 0
+
+    return f"""
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width">
+    </head>
+
+    <body style="background:#eee;font-family:Arial">
+
+    <div style="max-width:500px;margin:auto;padding:10px">
+
+    <a href="/">⬅ Powrót</a>
+
+    <h3>{name} • {total} pkt</h3>
+
+    <div style="background:white;padding:10px;border-radius:8px">
+        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
+    </div>
+
+    {html}
+
+    </div>
+    </body>
+    </html>
+    """
 
 
 # ===== ADMIN =====
@@ -278,24 +222,27 @@ def admin():
         rows += f"""
         <tr>
             <td>{match}</td>
-            <td><input name="g1_{i}" value="{g1}"></td>
-            <td><input name="g2_{i}" value="{g2}"></td>
+            <td><input name="g1_{i}" value="{g1}" style="width:50px"></td>
+            <td><input name="g2_{i}" value="{g2}" style="width:50px"></td>
         </tr>
         """
 
     return f"""
     <html>
-    <body>
+    <body style="font-family:Arial">
 
-    <h2>Panel wyników</h2>
+    <h2>⚙️ Panel wyników</h2>
+
+    <a href="/">⬅ Powrót</a><br><br>
 
     <form method="post">
-    <table border="1">
+    <table border="1" cellpadding="8">
+    <tr><th>Mecz</th><th>Gol 1</th><th>Gol 2</th></tr>
     {rows}
     </table>
 
     <br>
-    <button type="submit">Zapisz</button>
+    <button type="submit">💾 ZAPISZ</button>
     </form>
 
     </body>
@@ -306,19 +253,26 @@ def admin():
 @app.post("/admin")
 async def admin_save(request: Request):
 
-    form = await request.form()
-    df = pd.read_excel(FILE, sheet_name="Wyniki")
+    try:
+        form = await request.form()
+        df = pd.read_excel(FILE, sheet_name="Wyniki")
 
-    for i in df.index:
-        g1 = form.get(f"g1_{i}")
-        g2 = form.get(f"g2_{i}")
+        for i in df.index:
 
-        if g1:
-            df.at[i, "Gol 1"] = int(g1)
-        if g2:
-            df.at[i, "Gol 2"] = int(g2)
+            g1 = form.get(f"g1_{i}")
+            g2 = form.get(f"g2_{i}")
 
-    with pd.ExcelWriter(FILE, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-        df.to_excel(writer, sheet_name="Wyniki", index=False)
+            if g1 and g1.isdigit():
+                df.at[i, "Gol 1"] = int(g1)
 
-    return RedirectResponse("/", status_code=303)
+            if g2 and g2.isdigit():
+                df.at[i, "Gol 2"] = int(g2)
+
+        # ✅ bezpieczny zapis (bez błędów Rendera)
+        with pd.ExcelWriter(FILE, engine="openpyxl") as writer:
+            df.to_excel(writer, sheet_name="Wyniki", index=False)
+
+        return RedirectResponse("/", status_code=303)
+
+    except Exception as e:
+        return HTMLResponse(f"<h2>Błąd zapisu ❌</h2><pre>{e}</pre>")
