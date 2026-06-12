@@ -339,4 +339,3 @@ def player(name: str):
 
     </html>
     """
-    """
