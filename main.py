@@ -1,22 +1,9 @@
-from fastapi import FastAPI, Requestfrom fastapi import
-
-app = FastAPI()
-
-FILE = "tabela zbiorcza z rankingiem.xlsx"
-
-
-# ===== WYNIKI =====
-def get_results():
-    df = pd.read_excel(FILE, sheet_name="Wyniki")
-    results = {}
-
-    for _, r in df.iterrows():
-        m = r.get("Mecz")
+from fastapi import FastAPIfrom fastapiecz")
         g1 = r.get("Gol 1")
         g2 = r.get("Gol 2")
 
-        if isinstance(m, str) and pd.notna(g1) and pd.notna(g2):
-            results[m.strip()] = (int(g1), int(g2))
+        if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
+            results[match.strip()] = (int(g1), int(g2))
 
     return results
 
@@ -48,7 +35,7 @@ def get_ranking():
 
     for sheet in xls.sheet_names:
 
-        # ✅ ignorujemy systemowe arkusze
+        # ignorujemy systemowe arkusze
         if sheet in ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]:
             continue
 
@@ -57,16 +44,16 @@ def get_ranking():
         total = 0
 
         for _, r in df.iterrows():
-            m = r.get("Mecz")
-            t = r.get("Typ")
+            match = r.get("Mecz")
+            typ = r.get("Typ")
 
-            if not isinstance(m, str):
+            if not isinstance(match, str):
                 continue
 
-            actual = results.get(m.strip())
+            actual = results.get(match.strip())
 
             if actual:
-                total += get_points(t, actual)
+                total += get_points(typ, actual)
 
         ranking.append({
             "name": sheet.strip(),
@@ -83,10 +70,7 @@ def home():
     ranking = get_ranking()
 
     if not ranking:
-        return """
-        <h2>⚠️ Ranking pusty</h2>
-        <p>Sprawdź czy masz arkusze graczy (np. Marta, Kasia)</p>
-        """
+        return "<h2>⚠️ Ranking pusty — sprawdź Excel</h2>"
 
     rows = ""
 
@@ -94,25 +78,21 @@ def home():
         safe_name = urllib.parse.quote(r["name"])
 
         rows += f"""
-        <tr onclick="location.href='/gracz/{safe_name}'" style="<td>{r['name']}</td>
+        <tr onclick="location.href='/gracz/{safe_name}'" style="cursor:pointer}</td>
             <td>{r['pts']}</td>
         </tr>
         """
 
     return f"""
     <html>
-    <body style="font-family:Arial;background:#eee">
-
-    <div style="max-width:500px;margin:auto">
+    <body style="font-family:Arial">
 
     <h2>🏆 Ranking</h2>
 
-    <table border="1" style="width:100%;background:white">
+    <table border="1" style="width:100%">
     <tr><th>#</th><th>Gracz</th><th>Pkt</th></tr>
     {rows}
     </table>
-
-    </div>
 
     </body>
     </html>
@@ -127,9 +107,8 @@ def player(name: str):
 
     xls = pd.ExcelFile(FILE)
 
-    # ✅ zabezpieczenie
     if name not in xls.sheet_names:
-        return f"<h2>❌ Nie ma gracza: {name}</h2>"
+        return f"<h2>❌ Nie znaleziono gracza: {name}</h2>"
 
     df = pd.read_excel(xls, name)
     results = get_results()
@@ -137,43 +116,42 @@ def player(name: str):
     html = ""
 
     for _, r in df.iterrows():
+        match = r.get("Mecz")
+        typ = r.get("Typ")
 
-        m = r.get("Mecz")
-        t = r.get("Typ")
-
-        if not isinstance(m, str):
+        if not isinstance(match, str):
             continue
 
-        actual = results.get(m.strip())
+        actual = results.get(match.strip())
 
         if actual:
-            html += f"""
-            <div style="padding:10px;margin:5px;background:white">
-                {m} → {actual[0]}:{actual[1]} (typ {t})
-            </div>
-            """
+            html += f"<div>{match} → {actual[0]}:{actual[1]} (typ {typ})</div>"
         else:
-            html += f"""
-            <div style="padding:10px;margin:5px;background:#eee">
-                {m} → -:- (typ {t})
-            </div>
-            """
+            html += f"<div>{match} → -:- (typ {typ})</div>"
 
     return f"""
     <html>
-    <body style="font-family:Arial;background:#eee">
+    <body>
 
-    <div style="max-width:500px;margin:auto">
-
-    <h3>{name}</h3>
+    <h2>{name}</h2>
 
     {html}
-
-    </div>
 
     </body>
     </html>
     """
-
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 import pandas as pd
+import urllib.parse
+
+app = FastAPI()
+
+FILE = "tabela zbiorcza z rankingiem.xlsx"
+
+
+# ===== WYNIKI =====
+def get_results():
+    df = pd.read_excel(FILE, sheet_name="Wyniki")
+    results = {}
+
+    for _, r in df.iterrows():
