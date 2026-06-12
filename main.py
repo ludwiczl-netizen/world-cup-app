@@ -87,11 +87,51 @@ def get_ranking():
     return clean
 
 
-@app.get("/")
-def home(request: Request):
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def home():
     ranking = get_ranking()
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "ranking": ranking
-    })
+    # ✅ generujemy HTML ręcznie (bez Jinja)
+    rows = ""
+    for i, r in enumerate(ranking, 1):
+        rows += f"""
+        <tr>
+            <td>{i}</td>
+            <td>{r['gracz']}</td>
+            <td><b>{r['punkty']}</b></td>
+        </tr>
+        """
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Ranking MŚ 2026</title>
+    </head>
+
+    <body class="p-3">
+    <h2>🏆 Ranking MŚ 2026</h2>
+
+    <table class="table table-striped">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Gracz</th>
+        <th>Punkty</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    {rows}
+    </tbody>
+
+    </table>
+    </body>
+    </html>
+    """
+
+    return html
