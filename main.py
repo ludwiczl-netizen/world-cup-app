@@ -18,27 +18,53 @@ def normalize(text):
         .replace("ą", "a").replace("ę", "e")
         .replace("ż", "z").replace("ź", "z")
         .replace("ó", "o").replace("ń", "n")
+        .replace("&", " ")
     )
+
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
 
+def words(text):
+    return normalize(text).replace("-", " ").split()
+
+
 # ===== FLAGI =====
 def get_flag(team):
+    if not isinstance(team, str):
+        return ""
+
     mapping = {
-        "polska": "pl",
-        "niemcy": "de",
-        "meksyk": "mx",
-        "rpa": "za",
-        "korea poludniowa": "kr",
-        "czechy": "cz"
+        "polska": "pl", "niemcy": "de", "meksyk": "mx",
+        "kanada": "ca", "usa": "us", "paragwaj": "py",
+        "katar": "qa", "szwajcaria": "ch",
+        "brazylia": "br", "maroko": "ma",
+        "australia": "au", "turcja": "tr",
+        "bosnia": "ba", "hercegowina": "ba",
+        "curacao": "cw", "korea": "kr",
+        "czechy": "cz", "holandia": "nl",
+        "japonia": "jp", "szwecja": "se",
+        "tunezja": "tn", "hiszpania": "es",
+        "belgia": "be", "egipt": "eg",
+        "arabia": "sa", "urugwaj": "uy",
+        "iran": "ir", "nowa zelandia": "nz",
+        "francja": "fr", "senegal": "sn",
+        "irak": "iq", "norwegia": "no",
+        "argentyna": "ar", "algieria": "dz",
+        "austria": "at", "jordania": "jo",
+        "portugalia": "pt", "anglia": "gb",
+        "chorwacja": "hr", "ghana": "gh",
+        "panama": "pa", "kolumbia": "co",
+        "kongo": "cd"
     }
 
-    team_norm = normalize(team)
+    t = normalize(team)
+
     for k in mapping:
-        if k in team_norm:
-            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
+        if k in t:
+            return f'https://flagcdn.com/24x18/{mapping[k]}.png'
+
     return ""
 
 
@@ -61,20 +87,38 @@ def get_results():
 # ===== LIVE =====
 def get_live():
     try:
-        res = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
-        data = res.json()
+        r = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
+        data = r.json()
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
     except:
         return []
 
 
+# ===== DOPASOWANIE DRUŻYN (NAJWAŻNIEJSZE🔥) =====
+def match_team(excel_team, api_team):
+    we = words(excel_team)
+    wa = words(api_team)
+
+    for w1 in we:
+        for w2 in wa:
+            if similar(w1, w2) > 0.7:
+                return True
+
+    return False
+
+
 def get_live_match(match_name, matches):
+
     if not isinstance(match_name, str):
         return None, ""
 
-    match_norm = normalize(match_name)
+    try:
+        team1, team2 = [x.strip() for x in match_name.split("-")]
+    except:
+        return None, ""
 
     for m in matches:
+
         if not isinstance(m, dict):
             continue
 
@@ -84,13 +128,16 @@ def get_live_match(match_name, matches):
         if not isinstance(home, dict) or not isinstance(away, dict):
             continue
 
-        h = normalize(home.get("name"))
-        a = normalize(away.get("name"))
+        h = home.get("name")
+        a = away.get("name")
 
-        if not h or not a:
+        if not isinstance(h, str) or not isinstance(a, str):
             continue
 
-        if similar(h, match_norm) > 0.4 and similar(a, match_norm) > 0.4:
+        cond1 = match_team(team1, h) and match_team(team2, a)
+        cond2 = match_team(team1, a) and match_team(team2, h)
+
+        if cond1 or cond2:
             hs = home.get("score")
             as_ = away.get("score")
 
@@ -121,7 +168,7 @@ def get_ranking():
     results = get_results()
     live = get_live()
 
-    ranking = []
+    data = []
 
     for sheet in xls.sheet_names:
         if sheet in ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]:
@@ -146,25 +193,25 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
+
                 if pts == 3:
                     hits += 1
 
-        ranking.append({"name": sheet, "pts": total, "hits": hits})
+        data.append({"name": sheet, "pts": total, "hits": hits})
 
-    return sorted(ranking, key=lambda x: (x["pts"], x["hits"]), reverse=True)
+    return sorted(data, key=lambda x: (x["pts"], x["hits"]), reverse=True)
 
 
 # ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
 def home():
-    data = get_ranking()
-
     rows = ""
-    for i, r in enumerate(data, 1):
+
+    for i, r in enumerate(get_ranking(), 1):
         rows += f"""
         <tr>
             <td>{i}</td>
-            <td><a href="/gracz/{r['name']}">{r['name']}</a></td>
+            <td>/gracz/{r['name']}{r['name']}</a></td>
             <td>{r['pts']}</td>
             <td>🎯 {r['hits']}</td>
         </tr>
@@ -175,14 +222,13 @@ def home():
     <head>
     <meta name="viewport" content="width=device-width">
     <style>
-    body {{background:#f2f2f2;font-family:Arial;margin:0}}
+    body {{background:#f2f2f2;font-family:Arial}}
     .box {{max-width:500px;margin:auto;padding:10px}}
     table {{width:100%;background:white;border-radius:10px}}
-    td, th {{padding:12px}}
+    td,th {{padding:10px}}
     a {{text-decoration:none;color:black;font-weight:bold}}
     </style>
     </head>
-
     <body>
     <div class="box">
     <h3>🏆 Ranking</h3>
@@ -200,14 +246,13 @@ def home():
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
-    xls = pd.ExcelFile(FILE)
-    df = pd.read_excel(xls, name)
+    df = pd.read_excel(pd.ExcelFile(FILE), name)
 
     results = get_results()
     live = get_live()
 
     html = ""
-    total, hits, partial, miss = 0, 0, 0, 0
+    total = hits = partial = miss = 0
 
     for _, r in df.iterrows():
 
@@ -228,18 +273,15 @@ def player(name: str):
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
-        # 🟡 przyszły mecz
+        # przyszły mecz
         if not actual:
             html += f"""
-            <div class="card gray">
+            <div style="background:#eee;padding:12px;margin:10px;border-radius:10px;color:#888;display:flex;justify-content:space-between">
                 <div>
                     <div>{get_flag(t1)} {t1}</div>
                     <div>{get_flag(t2)} {t2}</div>
                 </div>
-                <div>
-                    <div class="score">-:-</div>
-                    <div class="pred">TYP {typ}</div>
-                </div>
+                <div>-:-<br>TYP {typ}</div>
             </div>
             """
             continue
@@ -254,19 +296,18 @@ def player(name: str):
         else:
             miss += 1
 
-        css = "live" if is_live else ""
+        live_style = "background:#ffeaea;border:2px solid red;" if is_live else "background:white;"
 
         html += f"""
-        <div class="card {css}">
+        <div style="{live_style} padding:12px;margin:10px;border-radius:10px;display:flex;justify-content:space-between">
             <div>
                 <div>{get_flag(t1)} {t1}</div>
                 <div>{get_flag(t2)} {t2}</div>
             </div>
-
             <div>
-                <div class="score">{actual[0]}:{actual[1]}</div>
-                <div class="pred">TYP {typ}</div>
-                <div class="live-text">{minute if is_live else ""}</div>
+                <div style="font-size:20px;font-weight:bold">{actual[0]}:{actual[1]}</div>
+                <div>TYP {typ}</div>
+                <div style="color:red">{minute if is_live else ""}</div>
                 <div style="color:{col}">{sym} {pts}</div>
             </div>
         </div>
@@ -280,48 +321,22 @@ def player(name: str):
     <head>
     <meta name="viewport" content="width=device-width">
     <style>
-
-    body {{background:#eee;font-family:Arial;margin:0}}
+    body {{background:#eee;font-family:Arial}}
     .box {{max-width:500px;margin:auto;padding:10px}}
-
-    .header {{
-        background:black;color:white;padding:10px;
-        border-radius:10px;margin-bottom:10px;text-align:center;
-    }}
-
-    .card {{
-        background:white;padding:12px;border-radius:10px;
-        margin-bottom:10px;display:flex;justify-content:space-between;
-    }}
-
-    .gray {{background:#f0f0f0;color:#999}}
-    .live {{background:#ffeaea;border:2px solid red}}
-
-    .score {{font-size:22px;font-weight:bold}}
-    .pred {{font-size:16px}}
-    .live-text {{color:red;font-weight:bold}}
-
-    .flag {{margin-right:6px}}
-
+    .header {{background:black;color:white;padding:10px;border-radius:10px;margin-bottom:10px;text-align:center}}
     </style>
     </head>
-
     <body>
-
     <div class="box">
-
-    <div class="header"><a href="/">⬅ Powrót</a></div>
-
+    <div class="header">/⬅ Powrót</a></div>
     <div class="header">{name} • {total} pkt</div>
-
-    <div class="card">
+    <div style="background:white;padding:10px;margin-bottom:10px;border-radius:10px">
         🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
     </div>
-
     {html}
-
     </div>
-
     </body>
+
     </html>
+    """
     """
