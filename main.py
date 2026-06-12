@@ -1,16 +1,16 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import pandas as pd
+import requests
 
 app = FastAPI()
 
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ✅ WYNIKI (pewne – z Excela)
+# ✅ WYNIKI Z EXCEL (fallback)
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
-
     results = {}
 
     for _, row in df.iterrows():
@@ -22,6 +22,35 @@ def get_results():
             results[match.strip()] = (int(g1), int(g2))
 
     return results
+
+
+# ✅ LIVE API (bezpieczny)
+def get_live_scores():
+    try:
+        url = "https://sportscore.com/api/widget/matches/?sport=football"
+        res = requests.get(url, timeout=5)
+        data = res.json()
+        return data.get("matches", [])
+    except:
+        return []
+
+
+# ✅ SMART MATCHING
+def find_live_score(match_name, live_matches):
+    match_name = match_name.lower()
+
+    for m in live_matches:
+        home = m.get("home", {}).get("name", "").lower()
+        away = m.get("away", {}).get("name", "").lower()
+
+        if home in match_name and away in match_name:
+            hs = m.get("home", {}).get("score")
+            as_ = m.get("away", {}).get("score")
+
+            if hs is not None and as_ is not None:
+                return (int(hs), int(as_))
+
+    return None
 
 
 # ✅ PUNKTY
@@ -48,7 +77,8 @@ def calc_points(pred, actual):
 # ✅ RANKING
 def get_ranking():
     xls = pd.ExcelFile(FILE, engine="openpyxl")
-    results = get_results()
+    results_excel = get_results()
+    live_matches = get_live_scores()
 
     ranking = []
     ignore = ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]
@@ -58,15 +88,27 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
-
         total = 0
 
         for _, row in df.iterrows():
             match = row.get("Mecz")
             pred = row.get("Typ")
 
-            if isinstance(match, str) and match.strip() in results:
-                total += calc_points(pred, results[match.strip()])
+            if not isinstance(match, str):
+                continue
+
+            match_clean = match.strip()
+
+            # ✅ najpierw Excel
+            actual = results_excel.get(match_clean)
+
+            # ✅ potem LIVE
+            live_score = find_live_score(match_clean, live_matches)
+            if live_score:
+                actual = live_score
+
+            if actual:
+                total += calc_points(pred, actual)
 
         ranking.append({
             "gracz": str(sheet),
@@ -77,7 +119,7 @@ def get_ranking():
     return ranking
 
 
-# ✅ STRONA GŁÓWNA
+# ✅ STRONA GŁÓWNA (Flashscore)
 @app.get("/", response_class=HTMLResponse)
 def home():
     ranking = get_ranking()
@@ -85,10 +127,10 @@ def home():
     rows = ""
 
     for i, r in enumerate(ranking, 1):
-        class_name = "leader" if i == 1 else ""
+        leader = "leader" if i == 1 else ""
 
         rows += f"""
-        <tr class="{class_name}">
+        <tr class="{leader}">
             <td>{i}</td>
             <td><a href="/gracz/{r['gracz']}">{r['gracz']}</a></td>
             <td><b>{r['punkty']}</b></td>
@@ -99,46 +141,30 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-
     <meta http-equiv="refresh" content="60">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-    body {{
-        background: #f4f6f9;
-    }}
-
+    body {{ background:#f4f6f9; }}
     .card {{
-        border-radius: 16px;
-        padding: 20px;
-        background: white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        background:white;
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0 4px 15px rgba(0,0,0,0.1);
     }}
-
     .leader {{
-        background: linear-gradient(90deg, gold, #fff8c5);
-        font-weight: bold;
-    }}
-
-    a {{
-        text-decoration: none;
-        color: black;
-    }}
-
-    a:hover {{
-        color: #007bff;
+        background:gold;
+        font-weight:bold;
     }}
     </style>
-
     </head>
 
     <body class="p-3">
 
     <div class="card">
-
-    <h3>🏆 Ranking MŚ 2026</h3>
+    <h3>🏆 Ranking LIVE</h3>
 
     <table class="table">
     <thead>
@@ -152,8 +178,8 @@ def home():
     <tbody>
     {rows}
     </tbody>
-    </table>
 
+    </table>
     </div>
 
     </body>
@@ -167,7 +193,8 @@ def home():
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player_details(name: str):
     xls = pd.ExcelFile(FILE, engine="openpyxl")
-    results = get_results()
+    results_excel = get_results()
+    live_matches = get_live_scores()
 
     df = pd.read_excel(xls, name)
 
@@ -178,39 +205,49 @@ def player_details(name: str):
         match = row.get("Mecz")
         pred = row.get("Typ")
 
-        if isinstance(match, str) and match.strip() in results:
-            actual = results[match.strip()]
-            pts = calc_points(pred, actual)
-            total += pts
+        if not isinstance(match, str):
+            continue
 
-            emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
-            color = "green" if pts == 3 else "orange" if pts == 1 else "red"
+        match_clean = match.strip()
 
-            rows += f"""
-            <tr>
-                <td>{match}</td>
-                <td>{pred}</td>
-                <td>{actual[0]}:{actual[1]}</td>
-                <td style="color:{color}"><b>{pts}</b> {emoji}</td>
-            </tr>
-            """
+        actual = results_excel.get(match_clean)
+        live_score = find_live_score(match_clean, live_matches)
+
+        if live_score:
+            actual = live_score
+
+        if not actual:
+            continue
+
+        pts = calc_points(pred, actual)
+        total += pts
+
+        emoji = "✅" if pts == 3 else "➖" if pts == 1 else "❌"
+
+        rows += f"""
+        <tr>
+            <td>{match}</td>
+            <td>{pred}</td>
+            <td>{actual[0]}:{actual[1]}</td>
+            <td><b>{pts}</b> {emoji}</td>
+        </tr>
+        """
 
     html = f"""
     <!DOCTYPE html>
     <html>
     <head>
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
 
     <body class="p-3">
 
     <a href="/">⬅ Powrót</a>
 
-    <h2>👤 {name}</h2>
-    <h4>🏆 Punkty: {total}</h4>
+    <h2>{name}</h2>
+    <h4>Punkty: {total}</h4>
 
     <table class="table table-striped">
 
