@@ -8,22 +8,17 @@ app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ===== NORMALIZACJA (fuzzy) =====
+# ===== NORMALIZACJA =====
 def normalize(text):
     if not isinstance(text, str):
         return ""
     return (
         text.lower()
-        .replace("ł", "l")
-        .replace("ś", "s")
-        .replace("ą", "a")
-        .replace("ę", "e")
-        .replace("ż", "z")
-        .replace("ź", "z")
-        .replace("ó", "o")
-        .replace("ń", "n")
+        .replace("ł", "l").replace("ś", "s")
+        .replace("ą", "a").replace("ę", "e")
+        .replace("ż", "z").replace("ź", "z")
+        .replace("ó", "o").replace("ń", "n")
     )
-
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
@@ -41,7 +36,6 @@ def get_flag(team):
     }
 
     team_norm = normalize(team)
-
     for k in mapping:
         if k in team_norm:
             return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
@@ -67,19 +61,14 @@ def get_results():
 # ===== LIVE =====
 def get_live():
     try:
-        res = requests.get(
-            "https://sportscore.com/api/widget/matches/?sport=football",
-            timeout=5
-        )
+        res = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
         data = res.json()
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
     except:
         return []
 
 
-# ===== AUTO DOPASOWANIE ✅ =====
 def get_live_match(match_name, matches):
-
     if not isinstance(match_name, str):
         return None, ""
 
@@ -101,7 +90,6 @@ def get_live_match(match_name, matches):
         if not h or not a:
             continue
 
-        # 🔥 fuzzy matching
         if similar(h, match_norm) > 0.4 and similar(a, match_norm) > 0.4:
             hs = home.get("score")
             as_ = away.get("score")
@@ -123,7 +111,6 @@ def get_points(pred, actual):
         if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
         return 0, "❌", "red"
-
     except:
         return 0, "❌", "red"
 
@@ -141,7 +128,6 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
-
         total, hits = 0, 0
 
         for _, r in df.iterrows():
@@ -160,7 +146,6 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
-
                 if pts == 3:
                     hits += 1
 
@@ -190,31 +175,22 @@ def home():
     <head>
     <meta name="viewport" content="width=device-width">
     <style>
-
     body {{background:#f2f2f2;font-family:Arial;margin:0}}
     .box {{max-width:500px;margin:auto;padding:10px}}
-
     table {{width:100%;background:white;border-radius:10px}}
-
     td, th {{padding:12px}}
-
     a {{text-decoration:none;color:black;font-weight:bold}}
-
     </style>
     </head>
 
     <body>
-
     <div class="box">
     <h3>🏆 Ranking</h3>
-
     <table>
     <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>
     {rows}
     </table>
-
     </div>
-
     </body>
     </html>
     """
@@ -250,7 +226,22 @@ def player(name: str):
             actual = live_score
             is_live = True
 
+        t1, t2 = [x.strip() for x in match.split("-")]
+
+        # 🟡 przyszły mecz
         if not actual:
+            html += f"""
+            <div class="card gray">
+                <div>
+                    <div>{get_flag(t1)} {t1}</div>
+                    <div>{get_flag(t2)} {t2}</div>
+                </div>
+                <div>
+                    <div class="score">-:-</div>
+                    <div class="pred">TYP {typ}</div>
+                </div>
+            </div>
+            """
             continue
 
         pts, sym, col = get_points(typ, actual)
@@ -263,25 +254,21 @@ def player(name: str):
         else:
             miss += 1
 
-        t1, t2 = [x.strip() for x in match.split("-")]
-
-        live_class = "live-match" if is_live else ""
+        css = "live" if is_live else ""
 
         html += f"""
-        <div class="card {live_class}">
-
+        <div class="card {css}">
             <div>
                 <div>{get_flag(t1)} {t1}</div>
                 <div>{get_flag(t2)} {t2}</div>
             </div>
 
-            <div class="right">
+            <div>
                 <div class="score">{actual[0]}:{actual[1]}</div>
                 <div class="pred">TYP {typ}</div>
-                <div class="live">{minute if is_live else ""}</div>
-                <div style="color:{col}">{sym} {pts} pkt</div>
+                <div class="live-text">{minute if is_live else ""}</div>
+                <div style="color:{col}">{sym} {pts}</div>
             </div>
-
         </div>
         """
 
@@ -292,65 +279,46 @@ def player(name: str):
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-
     <style>
 
     body {{background:#eee;font-family:Arial;margin:0}}
-
     .box {{max-width:500px;margin:auto;padding:10px}}
 
     .header {{
-        background:black;
-        color:white;
-        padding:10px;
-        border-radius:10px;
-        margin-bottom:10px;
-        text-align:center;
+        background:black;color:white;padding:10px;
+        border-radius:10px;margin-bottom:10px;text-align:center;
     }}
 
     .card {{
-        background:white;
-        padding:12px;
-        border-radius:10px;
-        margin-bottom:10px;
-        display:flex;
-        justify-content:space-between;
+        background:white;padding:12px;border-radius:10px;
+        margin-bottom:10px;display:flex;justify-content:space-between;
     }}
 
-    .live-match {{
-        background:#ffeaea;
-        border:1px solid red;
-    }}
+    .gray {{background:#f0f0f0;color:#999}}
+    .live {{background:#ffeaea;border:2px solid red}}
 
     .score {{font-size:22px;font-weight:bold}}
-    .pred {{font-size:16px;font-weight:bold}}
-    .live {{color:red;font-weight:bold}}
+    .pred {{font-size:16px}}
+    .live-text {{color:red;font-weight:bold}}
 
     .flag {{margin-right:6px}}
 
-    a {{color:white;text-decoration:none}}
-
     </style>
-
     </head>
 
     <body>
 
     <div class="box">
 
-        <div class="header">
-            <a href="/">⬅ Powrót</a>
-        </div>
+    <div class="header"><a href="/">⬅ Powrót</a></div>
 
-        <div class="header">
-            {name} • {total} pkt
-        </div>
+    <div class="header">{name} • {total} pkt</div>
 
-        <div class="card">
-            🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
-        </div>
+    <div class="card">
+        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
+    </div>
 
-        {html}
+    {html}
 
     </div>
 
