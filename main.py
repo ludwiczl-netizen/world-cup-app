@@ -79,4 +79,3 @@ def home(request: Request):
         "request": request,
         "ranking": ranking
     })
-``
