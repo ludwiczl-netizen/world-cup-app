@@ -2,9 +2,31 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import pandas as pd
 import requests
+from difflib import SequenceMatcher
 
 app = FastAPI()
 FILE = "tabela zbiorcza z rankingiem.xlsx"
+
+
+# ===== NORMALIZACJA (fuzzy) =====
+def normalize(text):
+    if not isinstance(text, str):
+        return ""
+    return (
+        text.lower()
+        .replace("ł", "l")
+        .replace("ś", "s")
+        .replace("ą", "a")
+        .replace("ę", "e")
+        .replace("ż", "z")
+        .replace("ź", "z")
+        .replace("ó", "o")
+        .replace("ń", "n")
+    )
+
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 
 
 # ===== FLAGI =====
@@ -14,18 +36,19 @@ def get_flag(team):
         "niemcy": "de",
         "meksyk": "mx",
         "rpa": "za",
-        "korea południowa": "kr",
+        "korea poludniowa": "kr",
         "czechy": "cz"
     }
 
-    if isinstance(team, str):
-        for k in mapping:
-            if k in team.lower():
-                return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
+    team_norm = normalize(team)
+
+    for k in mapping:
+        if k in team_norm:
+            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
     return ""
 
 
-# ===== WYNIKI (NAPRAWA NaN) =====
+# ===== WYNIKI =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -54,34 +77,32 @@ def get_live():
         return []
 
 
-# ===== SAFE LIVE MATCH ✅ =====
+# ===== AUTO DOPASOWANIE ✅ =====
 def get_live_match(match_name, matches):
 
     if not isinstance(match_name, str):
         return None, ""
 
-    match_name = match_name.lower()
+    match_norm = normalize(match_name)
 
     for m in matches:
-
         if not isinstance(m, dict):
             continue
 
         home = m.get("home")
         away = m.get("away")
 
-        # 🔥 KLUCZOWY FIX
         if not isinstance(home, dict) or not isinstance(away, dict):
             continue
 
-        h = home.get("name")
-        a = away.get("name")
+        h = normalize(home.get("name"))
+        a = normalize(away.get("name"))
 
-        if not isinstance(h, str) or not isinstance(a, str):
+        if not h or not a:
             continue
 
-        if h.lower() in match_name and a.lower() in match_name:
-
+        # 🔥 fuzzy matching
+        if similar(h, match_norm) > 0.4 and similar(a, match_norm) > 0.4:
             hs = home.get("score")
             as_ = away.get("score")
 
@@ -154,7 +175,6 @@ def home():
     data = get_ranking()
 
     rows = ""
-
     for i, r in enumerate(data, 1):
         rows += f"""
         <tr>
@@ -169,33 +189,18 @@ def home():
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-
     <style>
+
     body {{background:#f2f2f2;font-family:Arial;margin:0}}
+    .box {{max-width:500px;margin:auto;padding:10px}}
 
-    .box {{
-        max-width:500px;
-        margin:auto;
-        padding:10px;
-    }}
+    table {{width:100%;background:white;border-radius:10px}}
 
-    table {{
-        width:100%;
-        background:white;
-        border-radius:10px;
-    }}
+    td, th {{padding:12px}}
 
-    td, th {{
-        padding:12px;
-    }}
+    a {{text-decoration:none;color:black;font-weight:bold}}
 
-    a {{
-        text-decoration:none;
-        color:black;
-        font-weight:bold;
-    }}
     </style>
-
     </head>
 
     <body>
@@ -239,8 +244,11 @@ def player(name: str):
         actual = results.get(match.strip())
         live_score, minute = get_live_match(match, live)
 
+        is_live = False
+
         if live_score:
             actual = live_score
+            is_live = True
 
         if not actual:
             continue
@@ -257,8 +265,10 @@ def player(name: str):
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
+        live_class = "live-match" if is_live else ""
+
         html += f"""
-        <div class="card">
+        <div class="card {live_class}">
 
             <div>
                 <div>{get_flag(t1)} {t1}</div>
@@ -268,7 +278,7 @@ def player(name: str):
             <div class="right">
                 <div class="score">{actual[0]}:{actual[1]}</div>
                 <div class="pred">TYP {typ}</div>
-                <div class="live">{minute}</div>
+                <div class="live">{minute if is_live else ""}</div>
                 <div style="color:{col}">{sym} {pts} pkt</div>
             </div>
 
@@ -287,11 +297,7 @@ def player(name: str):
 
     body {{background:#eee;font-family:Arial;margin:0}}
 
-    .box {{
-        max-width:500px;
-        margin:auto;
-        padding:10px;
-    }}
+    .box {{max-width:500px;margin:auto;padding:10px}}
 
     .header {{
         background:black;
@@ -311,26 +317,21 @@ def player(name: str):
         justify-content:space-between;
     }}
 
-    .score {{
-        font-size:22px;
-        font-weight:bold;
+    .live-match {{
+        background:#ffeaea;
+        border:1px solid red;
     }}
 
-    .pred {{
-        font-size:16px;
-        font-weight:bold;
-    }}
+    .score {{font-size:22px;font-weight:bold}}
+    .pred {{font-size:16px;font-weight:bold}}
+    .live {{color:red;font-weight:bold}}
 
-    .flag {{
-        margin-right:6px;
-    }}
+    .flag {{margin-right:6px}}
 
-    a {{
-        color:white;
-        text-decoration:none;
-    }}
+    a {{color:white;text-decoration:none}}
 
     </style>
+
     </head>
 
     <body>
