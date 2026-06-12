@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Requestfrom fastapi importfrom fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 import pandas as pd
 import urllib.parse
 
 app = FastAPI()
+
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
@@ -12,12 +14,12 @@ def get_results():
     results = {}
 
     for _, r in df.iterrows():
-        match = r.get("Mecz")
+        m = r.get("Mecz")
         g1 = r.get("Gol 1")
         g2 = r.get("Gol 2")
 
-        if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
-            results[match.strip()] = (int(g1), int(g2))
+        if isinstance(m, str) and pd.notna(g1) and pd.notna(g2):
+            results[m.strip()] = (int(g1), int(g2))
 
     return results
 
@@ -30,9 +32,12 @@ def get_points(pred, actual):
 
         if p1 == a1 and p2 == a2:
             return 3, "✅", "green"
+
         if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
+
         return 0, "❌", "red"
+
     except:
         return 0, "❌", "red"
 
@@ -41,10 +46,10 @@ def get_points(pred, actual):
 def get_ranking():
     xls = pd.ExcelFile(FILE)
     results = get_results()
-
     data = []
 
     for sheet in xls.sheet_names:
+
         if sheet in ["Wyniki", "Ranking", "Typy_Zbiorcze", "Instrukcja"]:
             continue
 
@@ -64,6 +69,7 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
+
                 if pts == 3:
                     hits += 1
 
@@ -76,9 +82,11 @@ def get_ranking():
 @app.get("/", response_class=HTMLResponse)
 def home():
 
+    ranking = get_ranking()
+
     rows = ""
-    for i, r in enumerate(get_ranking(), 1):
-        safe = urllib.parse.quote(r['name'])
+    for i, r in enumerate(ranking, 1):
+        safe = urllib.parse.quote(r["name"])
 
         rows += f"""
         <tr>
@@ -135,7 +143,7 @@ def player(name: str):
     results = get_results()
 
     html = ""
-    total = hits = partial = miss = 0
+    total = hits = mid = miss = 0
 
     for _, r in df.iterrows():
 
@@ -163,7 +171,7 @@ def player(name: str):
         if pts == 3:
             hits += 1
         elif pts == 1:
-            partial += 1
+            mid += 1
         else:
             miss += 1
 
@@ -176,15 +184,11 @@ def player(name: str):
         </div>
         """
 
-    total_matches = hits + partial + miss
+    total_matches = hits + mid + miss
     acc = int(hits / total_matches * 100) if total_matches else 0
 
     return f"""
     <html>
-    <head>
-    <meta name="viewport" content="width=device-width">
-    </head>
-
     <body style="background:#eee;font-family:Arial">
 
     <div style="max-width:500px;margin:auto;padding:10px">
@@ -194,7 +198,7 @@ def player(name: str):
     <h3>{name} • {total} pkt</h3>
 
     <div style="background:white;padding:10px;border-radius:8px">
-        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
+        🎯 {hits} | ⚖️ {mid} | ❌ {miss} | 📊 {acc}%
     </div>
 
     {html}
@@ -268,11 +272,11 @@ async def admin_save(request: Request):
             if g2 and g2.isdigit():
                 df.at[i, "Gol 2"] = int(g2)
 
-        # ✅ bezpieczny zapis (bez błędów Rendera)
+        # ✅ stabilny zapis (działa na Render)
         with pd.ExcelWriter(FILE, engine="openpyxl") as writer:
             df.to_excel(writer, sheet_name="Wyniki", index=False)
 
         return RedirectResponse("/", status_code=303)
 
     except Exception as e:
-        return HTMLResponse(f"<h2>Błąd zapisu ❌</h2><pre>{e}</pre>")
+        return HTMLResponse(f"<h3>Błąd zapisu:</h3><pre>{e}</pre>")
