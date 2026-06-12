@@ -378,7 +378,6 @@ def player(name: str):
 
     </body>
     </html>
-    """
 
 from fastapi.responses import HTMLResponse
 import pandas as pd
