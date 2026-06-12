@@ -18,16 +18,14 @@ def get_flag(team):
         "czechy": "cz"
     }
 
-    if not isinstance(team, str):
-        return ""
-
-    for k in mapping:
-        if k in team.lower():
-            return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
+    if isinstance(team, str):
+        for k in mapping:
+            if k in team.lower():
+                return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" style="margin-right:6px">'
     return ""
 
 
-# ===== EXCEL (NAPRAWA NaN ✅) =====
+# ===== WYNIKI (SAFE ✅) =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -37,7 +35,6 @@ def get_results():
         g1 = r.get("Gol 1")
         g2 = r.get("Gol 2")
 
-        # ✅ KLUCZOWA NAPRAWA
         if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
             results[match.strip()] = (int(g1), int(g2))
 
@@ -54,8 +51,11 @@ def get_live():
         return []
 
 
-def get_live_match(name, matches):
-    name = str(name).lower()
+def get_live_match(match_name, matches):
+    if not isinstance(match_name, str):
+        return None, ""
+
+    name = match_name.lower()
 
     for m in matches:
         if not isinstance(m, dict):
@@ -89,6 +89,7 @@ def get_points(pred, actual):
         if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 and a1 == a2):
             return 1, "➖", "orange"
         return 0, "❌", "red"
+
     except:
         return 0, "❌", "red"
 
@@ -125,7 +126,6 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
-
                 if pts == 3:
                     hits += 1
 
@@ -140,12 +140,13 @@ def home():
     data = get_ranking()
 
     rows = ""
+
     for i, r in enumerate(data, 1):
         rows += f"""
         <tr>
             <td>{i}</td>
             <td><a href="/gracz/{r['name']}">{r['name']}</a></td>
-            <td>{r['pts']}</td>
+            <td><b>{r['pts']}</b></td>
             <td>🎯 {r['hits']}</td>
         </tr>
         """
@@ -154,11 +155,11 @@ def home():
     <html>
     <head>
     <meta name="viewport" content="width=device-width">
-    <style>
 
+    <style>
     body {{background:#f2f2f2;font-family:Arial;margin:0}}
 
-    .container {{
+    .box {{
         max-width:500px;
         margin:auto;
         padding:10px;
@@ -176,20 +177,20 @@ def home():
 
     a {{
         text-decoration:none;
-        font-weight:bold;
         color:black;
+        font-weight:bold;
     }}
-
     </style>
+
     </head>
 
     <body>
 
-    <div class="container">
+    <div class="box">
     <h3>🏆 Ranking</h3>
 
     <table>
-    <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>Trafienia</th></tr>
+    <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>
     {rows}
     </table>
 
@@ -210,7 +211,7 @@ def player(name: str):
     results = get_results()
     live = get_live()
 
-    matches_html = ""
+    html = ""
     total, hits, partial, miss = 0, 0, 0, 0
 
     for _, r in df.iterrows():
@@ -241,26 +242,26 @@ def player(name: str):
 
         t1, t2 = [x.strip() for x in match.split("-")]
 
-        matches_html += f"""
-        <div class="match">
+        html += f"""
+        <div class="card">
 
             <div>
-                <div>{get_flag(t1)} {t1}</div>
-                <div>{get_flag(t2)} {t2}</div>
+                <div>{get_flag(t1)}{t1}</div>
+                <div>{get_flag(t2)}{t2}</div>
             </div>
 
             <div class="right">
                 <div class="score">{actual[0]}:{actual[1]}</div>
                 <div class="pred">TYP {typ}</div>
                 <div class="live">{minute}</div>
-                <div class="{col}">{sym} {pts} pkt</div>
+                <div style="color:{col}">{sym} {pts} pkt</div>
             </div>
 
         </div>
         """
 
     total_matches = hits + partial + miss
-    accuracy = int(hits / total_matches * 100) if total_matches else 0
+    acc = int((hits / total_matches) * 100) if total_matches else 0
 
     return f"""
     <html>
@@ -271,29 +272,22 @@ def player(name: str):
 
     body {{background:#eee;font-family:Arial;margin:0}}
 
-    .container {{
+    .box {{
         max-width:500px;
         margin:auto;
         padding:10px;
     }}
 
     .header {{
-        background:#111;
+        background:black;
         color:white;
-        padding:12px;
-        border-radius:10px;
-        text-align:center;
-        margin-bottom:10px;
-    }}
-
-    .stats {{
-        background:white;
         padding:10px;
         border-radius:10px;
         margin-bottom:10px;
+        text-align:center;
     }}
 
-    .match {{
+    .card {{
         background:white;
         padding:12px;
         border-radius:10px;
@@ -312,23 +306,14 @@ def player(name: str):
         font-weight:bold;
     }}
 
-    .flag {{
-        margin-right:6px;
-    }}
-
-    .green {{color:green}}
-    .orange {{color:orange}}
-    .red {{color:red}}
-
     a {{color:white;text-decoration:none}}
 
     </style>
-
     </head>
 
     <body>
 
-    <div class="container">
+    <div class="box">
 
     <div class="header">
         <a href="/">⬅ Powrót</a>
@@ -338,14 +323,16 @@ def player(name: str):
         {name} • {total} pkt
     </div>
 
-    <div class="stats">
-        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {accuracy}%
+    <div class="card">
+        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
     </div>
 
-    {matches_html}
+    {html}
 
     </div>
 
     </body>
+
     </html>
     """
+    """``
