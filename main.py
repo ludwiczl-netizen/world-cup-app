@@ -4,7 +4,6 @@ import pandas as pd
 import urllib.parse
 
 app = FastAPI()
-
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
@@ -69,7 +68,6 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
-
                 if pts == 3:
                     hits += 1
 
@@ -82,11 +80,9 @@ def get_ranking():
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-    ranking = get_ranking()
-
     rows = ""
-    for i, r in enumerate(ranking, 1):
-        safe = urllib.parse.quote(r["name"])
+    for i, r in enumerate(get_ranking(), 1):
+        safe = urllib.parse.quote(r['name'])
 
         rows += f"""
         <tr>
@@ -133,7 +129,6 @@ def home():
 def player(name: str):
 
     name = urllib.parse.unquote(name)
-
     xls = pd.ExcelFile(FILE)
 
     if name not in xls.sheet_names:
@@ -219,13 +214,13 @@ def admin():
 
     for i, r in df.iterrows():
 
-        match = r.get("Mecz")
+        m = r.get("Mecz")
         g1 = "" if pd.isna(r.get("Gol 1")) else int(r.get("Gol 1"))
         g2 = "" if pd.isna(r.get("Gol 2")) else int(r.get("Gol 2"))
 
         rows += f"""
         <tr>
-            <td>{match}</td>
+            <td>{m}</td>
             <td><input name="g1_{i}" value="{g1}" style="width:50px"></td>
             <td><input name="g2_{i}" value="{g2}" style="width:50px"></td>
         </tr>
@@ -259,10 +254,18 @@ async def admin_save(request: Request):
 
     try:
         form = await request.form()
-        df = pd.read_excel(FILE, sheet_name="Wyniki")
 
+        # ✅ wczytaj wszystkie arkusze
+        xls = pd.ExcelFile(FILE)
+        sheets = {}
+
+        for sheet in xls.sheet_names:
+            sheets[sheet] = pd.read_excel(xls, sheet)
+
+        df = sheets["Wyniki"]
+
+        # ✅ aktualizuj wyniki
         for i in df.index:
-
             g1 = form.get(f"g1_{i}")
             g2 = form.get(f"g2_{i}")
 
@@ -272,11 +275,14 @@ async def admin_save(request: Request):
             if g2 and g2.isdigit():
                 df.at[i, "Gol 2"] = int(g2)
 
-        # ✅ stabilny zapis (działa na Render)
+        sheets["Wyniki"] = df
+
+        # ✅ zapis wszystkich arkuszy (NAJWAŻNIEJSZE!)
         with pd.ExcelWriter(FILE, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="Wyniki", index=False)
+            for name, data in sheets.items():
+                data.to_excel(writer, sheet_name=name, index=False)
 
         return RedirectResponse("/", status_code=303)
 
     except Exception as e:
-        return HTMLResponse(f"<h3>Błąd zapisu:</h3><pre>{e}</pre>")
+        return HTMLResponse(f"<h2>Błąd zapisu</h2><pre>{e}</pre>")
