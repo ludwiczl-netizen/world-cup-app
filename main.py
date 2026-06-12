@@ -18,7 +18,7 @@ def get_results():
         g2 = row.get("Gol 2")
 
         if isinstance(match, str) and pd.notna(g1) and pd.notna(g2):
-            results[str(match)] = (int(g1), int(g2))
+            results[match] = (int(g1), int(g2))
 
     return results
 
@@ -55,8 +55,8 @@ def get_ranking():
             continue
 
         df = pd.read_excel(xls, sheet)
-        total = 0
 
+        total = 0
         for _, row in df.iterrows():
             match = row.get("Mecz")
             pred = row.get("Typ")
@@ -64,20 +64,23 @@ def get_ranking():
             if isinstance(match, str) and match in results:
                 total += calc_points(pred, results[match])
 
-        # ✅ ZAWSZE dict (zero tuple!)
-        ranking.append({
+        # ✅ TU jest klucz – zawsze dict
+        item = {
             "gracz": str(sheet),
             "punkty": int(total)
-        })
+        }
 
-    # ✅ FINALNE CZYSZCZENIE
+        ranking.append(item)
+
+    # ✅ TU drugie zabezpieczenie
     clean = []
     for r in ranking:
-        if isinstance(r, dict) and "gracz" in r and "punkty" in r:
-            clean.append({
-                "gracz": str(r["gracz"]),
-                "punkty": int(r["punkty"])
-            })
+        if type(r) is dict:
+            if "gracz" in r and "punkty" in r:
+                clean.append({
+                    "gracz": str(r["gracz"]),
+                    "punkty": int(r["punkty"])
+                })
 
     clean.sort(key=lambda x: x["punkty"], reverse=True)
 
