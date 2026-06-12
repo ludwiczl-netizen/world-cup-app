@@ -21,11 +21,11 @@ def get_flag(team):
     if isinstance(team, str):
         for k in mapping:
             if k in team.lower():
-                return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" style="margin-right:6px">'
+                return f'<img src="https://flagcdn.com/24x18/{mapping[k]}.png" class="flag">'
     return ""
 
 
-# ===== WYNIKI (SAFE ✅) =====
+# ===== WYNIKI (NAPRAWA NaN) =====
 def get_results():
     df = pd.read_excel(FILE, sheet_name="Wyniki")
     results = {}
@@ -44,36 +44,49 @@ def get_results():
 # ===== LIVE =====
 def get_live():
     try:
-        res = requests.get("https://sportscore.com/api/widget/matches/?sport=football", timeout=5)
+        res = requests.get(
+            "https://sportscore.com/api/widget/matches/?sport=football",
+            timeout=5
+        )
         data = res.json()
         return [m for m in data.get("matches", []) if isinstance(m, dict)]
     except:
         return []
 
 
+# ===== SAFE LIVE MATCH ✅ =====
 def get_live_match(match_name, matches):
+
     if not isinstance(match_name, str):
         return None, ""
 
-    name = match_name.lower()
+    match_name = match_name.lower()
 
     for m in matches:
+
         if not isinstance(m, dict):
             continue
 
-        home = m.get("home", {})
-        away = m.get("away", {})
+        home = m.get("home")
+        away = m.get("away")
+
+        # 🔥 KLUCZOWY FIX
+        if not isinstance(home, dict) or not isinstance(away, dict):
+            continue
 
         h = home.get("name")
         a = away.get("name")
 
-        if isinstance(h, str) and isinstance(a, str):
-            if h.lower() in name and a.lower() in name:
-                hs = home.get("score")
-                as_ = away.get("score")
+        if not isinstance(h, str) or not isinstance(a, str):
+            continue
 
-                if isinstance(hs, int) and isinstance(as_, int):
-                    return (hs, as_), m.get("minute", "")
+        if h.lower() in match_name and a.lower() in match_name:
+
+            hs = home.get("score")
+            as_ = away.get("score")
+
+            if isinstance(hs, int) and isinstance(as_, int):
+                return (hs, as_), m.get("minute", "")
 
     return None, ""
 
@@ -126,6 +139,7 @@ def get_ranking():
             if actual:
                 pts, _, _ = get_points(typ, actual)
                 total += pts
+
                 if pts == 3:
                     hits += 1
 
@@ -146,7 +160,7 @@ def home():
         <tr>
             <td>{i}</td>
             <td><a href="/gracz/{r['name']}">{r['name']}</a></td>
-            <td><b>{r['pts']}</b></td>
+            <td>{r['pts']}</td>
             <td>🎯 {r['hits']}</td>
         </tr>
         """
@@ -215,6 +229,7 @@ def player(name: str):
     total, hits, partial, miss = 0, 0, 0, 0
 
     for _, r in df.iterrows():
+
         match = r.get("Mecz")
         typ = r.get("Typ")
 
@@ -246,8 +261,8 @@ def player(name: str):
         <div class="card">
 
             <div>
-                <div>{get_flag(t1)}{t1}</div>
-                <div>{get_flag(t2)}{t2}</div>
+                <div>{get_flag(t1)} {t1}</div>
+                <div>{get_flag(t2)} {t2}</div>
             </div>
 
             <div class="right">
@@ -261,7 +276,7 @@ def player(name: str):
         """
 
     total_matches = hits + partial + miss
-    acc = int((hits / total_matches) * 100) if total_matches else 0
+    acc = int(hits / total_matches * 100) if total_matches else 0
 
     return f"""
     <html>
@@ -306,7 +321,14 @@ def player(name: str):
         font-weight:bold;
     }}
 
-    a {{color:white;text-decoration:none}}
+    .flag {{
+        margin-right:6px;
+    }}
+
+    a {{
+        color:white;
+        text-decoration:none;
+    }}
 
     </style>
     </head>
@@ -315,23 +337,22 @@ def player(name: str):
 
     <div class="box">
 
-    <div class="header">
-        <a href="/">⬅ Powrót</a>
-    </div>
+        <div class="header">
+            <a href="/">⬅ Powrót</a>
+        </div>
 
-    <div class="header">
-        {name} • {total} pkt
-    </div>
+        <div class="header">
+            {name} • {total} pkt
+        </div>
 
-    <div class="card">
-        🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
-    </div>
+        <div class="card">
+            🎯 {hits} | ⚖️ {partial} | ❌ {miss} | 📊 {acc}%
+        </div>
 
-    {html}
+        {html}
 
     </div>
 
     </body>
-
     </html>
     """
