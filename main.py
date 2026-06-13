@@ -256,25 +256,16 @@ def home():
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
 # ===== ADMIN =====
- html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"@app.get("/admin", response_class=HTMLResponse)
+ html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"
 
-    for row in data.data:
-
-        wynik = "-"
-        if row["gol1"] is not None and row["gol2"] is not None:
-            wynik = f"{row['gol1']}:{row['gol2']}"
-
-        html += "<tr>"
-        html += f"<td>{row['id']}</td>"
-        html += f"<td>{row['mecz']}</td>"
-        html += f"<td>{wynik}</td>"
-        html += f"<td><a href='/usun/{row['id']}'>❌</a></td>"
+@app.get("/admin", response_class=HTMLResponse)@app.get("/admin", response_class']}'>❌</a></td>"
         html += "</tr>"
 
     html += "</table>"
     html += "<br><br><a href='/'>⬅ Powrót</a>"
 
     return html
+``
 def admin():
 
     html = STYLE
@@ -291,20 +282,6 @@ def admin():
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     html += "<table>"
-
-    # ===== FORMULARZ =====
-    html += "<form action='/dodaj' method='post'>"
-    html += "Mecz: <input name='mecz'><br><br>"
-    html += "Wynik: <input name='wynik'><br><br>"
-    html += "<button type='submit'>Zapisz</button>"
-    html += "</form>"
-
-    html += "<hr><h3>📋 Lista meczów</h3>"
-
-    # ===== POBIERZ MECZE =====
-    data = supabase.table("wyniki").select("*").order("id").execute()
-
-    html += "<table>"
     html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"
 
     for row in data.data:
@@ -314,8 +291,9 @@ def admin():
             wynik = f"{row['gol1']}:{row['gol2']}"
 
         html += "<tr>"
-
-
+        html += f"<td>{row['id']}</td>"
+        html += f"<td>{row['mecz']}</td>"
+        html += f"<td>{wynik}</td>"
 @app.get("/usun/{id}")
 def usun(id: int):
 
