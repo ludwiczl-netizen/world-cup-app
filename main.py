@@ -256,16 +256,18 @@ def home():
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
 # ===== ADMIN =====
-@app.get("/admin",']}</td>"@app.get("/admin", response_class=HTMLResponse)
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+
         html += f"<td>{row['mecz']}</td>"
         html += f"<td>{wynik}</td>"
 
-        html += f"<td>/usun/{row['id']}'>❌</a></td>"
+        html += f"<td><a href='/usun/{row['id']}'>❌</a></td>"
         html += "</tr>"
 
     html += "</table>"
 
-    html += "<br><br>/⬅ Powrót</a>"
+    html += "<br><br><a href='/'>⬅ Powrót</a>"
 
     return html
 def admin():
