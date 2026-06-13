@@ -75,9 +75,8 @@ img.flag {
 </style>
 """
 
-# ===== FLAGI =====
+# ===== FLAGI (działają na Windows) =====
 def get_flag(country):
-
     codes = {
         "Polska":"pl","Niemcy":"de","Francja":"fr","Hiszpania":"es",
         "USA":"us","Argentyna":"ar","Brazylia":"br","Holandia":"nl",
@@ -86,19 +85,19 @@ def get_flag(country):
         "Arabia Saudyjska":"sa","Kanada":"ca","RPA":"za",
         "Czechy":"cz","Bośnia i Hercegowina":"ba","Paragwaj":"py",
         "Katar":"qa","Maroko":"ma","Haiti":"ht","Australia":"au",
-        "Curacao":"cw","Ekwador":"ec","Wybrzeże Kości Słoniowej":"ci",
-        "Tunezja":"tn","Republika Zielonego Przylądka":"cv",
-        "Belgia":"be","Egipt":"eg","Urugwaj":"uy","Iran":"ir",
+        "Curacao":"cw","Ekwador":"ec",
+        "Wybrzeże Kości Słoniowej":"ci","Tunezja":"tn",
+        "Republika Zielonego Przylądka":"cv","Belgia":"be",
+        "Egipt":"eg","Urugwaj":"uy","Iran":"ir",
         "Nowa Zelandia":"nz","Senegal":"sn","Irak":"iq",
         "Norwegia":"no","Algieria":"dz","Austria":"at",
         "Jordania":"jo","Portugalia":"pt","DR Konga":"cd",
         "Chorwacja":"hr","Ghana":"gh","Panama":"pa",
         "Uzbekistan":"uz","Kolumbia":"co"
     }
-
     code = codes.get(country)
     if code:
-        return f"https://flagcdn.com/w20/{code}.png"
+        return f"<img class='flag' src='https://flagcdn.com/w20/{code}.png'>"
     return ""
 
 # ===== LIVE API =====
