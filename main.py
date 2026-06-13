@@ -117,12 +117,12 @@ def home():
 
         html += "<tr>"
         html += "<td>" + pos + "</td>"
-        html += "<td>/gracz/" + safe + "'>" + r["name"] + "</a></td>"
+        html += "<td><a href='/gracz/" + safe + "'>" + r["name"] + "</a></td>"
         html += "<td>" + str(r["pkt"]) + "</td>"
         html += "</tr>"
 
     html += "</table>"
-    html += "<br>/admin⚙️ Panel admin</a>"
+    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
 
@@ -186,7 +186,7 @@ def player(name: str):
 
     html += "</table>"
     html += "<h3>🔥 Suma: " + str(suma) + "</h3>"
-    html += "<br>/⬅ Powrót</a>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
 
