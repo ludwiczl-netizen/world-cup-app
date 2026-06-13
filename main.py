@@ -2,7 +2,7 @@
 @app.get("/", response_class=HTMLResponse)
 def home():
     html = "<h2>Ranking</h2>"
-html += "<div onclick=\"location.href='/test'ml
+    html += "<a href='/test'>Klik mnie</a>"
     return html
 
 @app.get("/test")
