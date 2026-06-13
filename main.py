@@ -1,7 +1,7 @@
-from fastapi.responses import HTMLResponse
 
-h2>Ranking start ✅</h2>"@app.get("/", response_class=HTMLResponse)
-    html += "<br>"
-    return html
-
+@app.get("/", response_class=HTMLResponse)
 def home():
+
+    html = "<h2>Ranking</h2>"
+    html += "/testKlik mnie</div>"
+    return html
