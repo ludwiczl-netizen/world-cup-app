@@ -5,18 +5,21 @@ from supabase import create_client
 import pandas as pd
 import urllib.parse
 
+
+# ===== APP =====
 app = FastAPI()
 
+# ===== CONFIG =====
+SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
+SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
+FILE = "tabela zbiorcza z rankingiem.xlsx"
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
 STYLE = """
 <style>
-body {
- font-family: Arial;
- background:#f5f5f5;
- margin:0;
- padding:10px;
-}
+body { font-family: Arial; background:#f5f5f5; margin:0; padding:10px; }
 h2 { text-align:center; }
 
 table { width:100%; border-collapse:collapse; background:white; }
@@ -28,11 +31,7 @@ tr:hover{ background:#ddd; }
 
 a { text-decoration:none; color:#007bff; display:block; }
 
-img.flag {
- height:18px;
- vertical-align:middle;
- margin-right:5px;
-}
+img.flag { height:18px; vertical-align:middle; margin-right:5px; }
 
 @media (max-width:600px){
  table { font-size:12px; }
@@ -41,7 +40,7 @@ img.flag {
 </style>
 """
 
-# ===== FLAGI (IMG - działa na Windows) =====
+# ===== FLAGI (działają na Windows) =====
 def get_flag(country):
     codes = {
         "Polska":"pl","Niemcy":"de","Francja":"fr","Hiszpania":"es",
@@ -61,57 +60,40 @@ def get_flag(country):
         "Chorwacja":"hr","Ghana":"gh","Panama":"pa",
         "Uzbekistan":"uz","Kolumbia":"co"
     }
-
     code = codes.get(country)
     if code:
         return f"<img class='flag' src='https://flagcdn.com/w20/{code}.png'>"
     return ""
 
-# ===== LIVE UPDATE (TYLKO PUSTE!) =====
+# ===== AUTO WYNIKI (tylko puste!) =====
 def get_live_match(mecz):
-
-    # 👉 TU PODŁĄCZYSZ API
     demo = {
         "Polska-Niemcy": (2,1),
         "Francja-Włochy": (1,0)
     }
-
     return demo.get(mecz)
 
 def update_missing_results():
-
     data = supabase.table("wyniki").select("*").order("id").execute()
-
-    for row in data.data:
-
-        # ✅ TYLKO brak wyniku
-        if row["gol1"] is None and row["gol2"] is None:
-
-            wynik = get_live_match(row["mecz"])
-
+    for r in data.data:
+        if r["gol1"] is None and r["gol2"] is None:
+            wynik = get_live_match(r["mecz"])
             if wynik:
                 supabase.table("wyniki").update({
                     "gol1": wynik[0],
                     "gol2": wynik[1]
-                }).eq("id", row["id"]).execute()
-
+                }).eq("id", r["id"]).execute()
 
 # ===== WYNIKI =====
 def get_wyniki():
-
     data = supabase.table("wyniki").select("*").order("id").execute()
-
     out = {}
-
     for r in data.data:
-
         if r["gol1"] is not None and r["gol2"] is not None:
             out[r["mecz"].strip()] = (r["gol1"], r["gol2"])
         else:
             out[r["mecz"].strip()] = None
-
     return out
-
 
 # ===== PUNKTY =====
 def licz_punkty(typ, wynik):
@@ -125,10 +107,10 @@ def licz_punkty(typ, wynik):
             return 1
         if t1 == t2 and w1 == w2:
             return 1
+
         return 0
     except:
         return 0
-
 
 # ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
@@ -138,6 +120,7 @@ def home():
 
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
+
     ranking = []
 
     for sheet in xls.sheet_names:
@@ -167,31 +150,36 @@ def home():
                 if pkt == 3:
                     dokladne += 1
 
-        ranking.append({"name":sheet,"pkt":suma,"dokladne":dokladne})
+        ranking.append({
+            "name": sheet,
+            "pkt": suma,
+            "dokladne": dokladne
+        })
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
     html = STYLE
-    html += "<h2>🏆 Ranking</h2><table>"
+    html += "<h2>🏆 Ranking</h2>"
+    html += "<table>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
     for i, r in enumerate(ranking,1):
 
         safe = urllib.parse.quote(r["name"])
+
         pos = "🥇" if i==1 else "🥈" if i==2 else "🥉" if i==3 else str(i)
 
         html += "<tr>"
-        html += "<td>"+pos+"</td>"
+        html += f"<td>{pos}</td>"
         html += f"<td><a href='/gracz/{safe}'>{r['name']}</a></td>"
-        html += "<td>"+str(r["pkt"])+"</td>"
-        html += "<td>"+str(r["dokladne"])+"</td>"
+        html += f"<td>{r['pkt']}</td>"
+        html += f"<td>{r['dokladne']}</td>"
         html += "</tr>"
 
     html += "</table>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
-
 
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
@@ -200,7 +188,6 @@ def player(name: str):
     name = urllib.parse.unquote(name)
 
     xls = pd.ExcelFile(FILE)
-
     if name not in xls.sheet_names:
         return "Brak danych"
 
@@ -210,7 +197,8 @@ def player(name: str):
     wyniki = get_wyniki()
 
     html = STYLE
-    html += f"<h2>{name}</h2><table>"
+    html += f"<h2>{name}</h2>"
+    html += "<table>"
     html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
 
     suma = 0
@@ -225,12 +213,11 @@ def player(name: str):
 
         wynik = wyniki.get(mecz)
 
-        teams = mecz.split("-")
+        parts = mecz.split("-")
 
-        if len(teams) == 2:
-            t1 = teams[0].strip()
-            t2 = teams[1].strip()
-
+        if len(parts) == 2:
+            t1 = parts[0].strip()
+            t2 = parts[1].strip()
             mecz_html = f"{get_flag(t1)}{t1} vs {get_flag(t2)}{t2}"
         else:
             mecz_html = mecz
@@ -254,10 +241,9 @@ def player(name: str):
 
     html += "</table>"
     html += f"<h3>Suma: {suma}</h3>"
-    html += "<a href='/'>⬅ Powrót</a>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
-
 
 # ===== ADMIN =====
 @app.get("/admin", response_class=HTMLResponse)
@@ -267,7 +253,8 @@ def admin():
 
     html = STYLE
     html += "<h2>Panel wyników</h2>"
-    html += "<form method='post'><table>"
+    html += "<form method='post'>"
+    html += "<table>"
 
     for i, r in enumerate(data.data):
 
@@ -280,18 +267,18 @@ def admin():
         html += f"<td><input name='g2_{i}' value='{g2}'></td>"
         html += "</tr>"
 
-    html += "</table><button>ZAPISZ</button></form>"
-    html += "<a href='/'>⬅ Powrót</a>"
+    html += "</table>"
+    html += "<button>ZAPISZ</button>"
+    html += "</form>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
-
 
 # ===== SAVE =====
 @app.post("/admin")
 async def save(request: Request):
 
     form = await request.form()
-
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     for i, row in enumerate(data.data):
@@ -308,16 +295,3 @@ async def save(request: Request):
         }).eq("id", row["id"]).execute()
 
     return RedirectResponse("/admin", status_code=303)
-from fastapi.responses import HTMLResponse, RedirectResponse
-from supabase import create_client
-import pandas as pd
-import urllib.parse
-
-app = FastAPI()
-
-SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
-SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
