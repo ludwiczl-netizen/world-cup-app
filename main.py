@@ -256,17 +256,22 @@ def home():
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
 # ===== ADMIN =====
-@app.get("/admin", response_class=HTMLResponse)
-def admin():
+ html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"@app.get("/admin", response_class=HTMLResponse)
 
+    for row in data.data:
+
+        wynik = "-"
+        if row["gol1"] is not None and row["gol2"] is not None:
+            wynik = f"{row['gol1']}:{row['gol2']}"
+
+        html += "<tr>"
+        html += f"<td>{row['id']}</td>"
         html += f"<td>{row['mecz']}</td>"
         html += f"<td>{wynik}</td>"
-
         html += f"<td><a href='/usun/{row['id']}'>❌</a></td>"
         html += "</tr>"
 
     html += "</table>"
-
     html += "<br><br><a href='/'>⬅ Powrót</a>"
 
     return html
@@ -274,6 +279,18 @@ def admin():
 
     html = STYLE
     html += "<h2>⚙️ Panel admin</h2>"
+
+    html += "<form action='/dodaj' method='post'>"
+    html += "Mecz: <input name='mecz'><br><br>"
+    html += "Wynik: <input name='wynik'><br><br>"
+    html += "<button type='submit'>Zapisz</button>"
+    html += "</form>"
+
+    html += "<hr><h3>📋 Lista meczów</h3>"
+
+    data = supabase.table("wyniki").select("*").order("id").execute()
+
+    html += "<table>"
 
     # ===== FORMULARZ =====
     html += "<form action='/dodaj' method='post'>"
