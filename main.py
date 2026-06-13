@@ -256,22 +256,53 @@ def home():
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
 # ===== ADMIN =====
-@app.get("/admin", response_class=HTMLResponse)
+@app.get("/admin",']}</td>"@app.get("/admin", response_class=HTMLResponse)
+        html += f"<td>{row['mecz']}</td>"
+        html += f"<td>{wynik}</td>"
+
+        html += f"<td>/usun/{row['id']}'>❌</a></td>"
+        html += "</tr>"
+
+    html += "</table>"
+
+    html += "<br><br>/⬅ Powrót</a>"
+
+    return html
 def admin():
 
     html = STYLE
     html += "<h2>⚙️ Panel admin</h2>"
 
+    # ===== FORMULARZ =====
     html += "<form action='/dodaj' method='post'>"
     html += "Mecz: <input name='mecz'><br><br>"
     html += "Wynik: <input name='wynik'><br><br>"
     html += "<button type='submit'>Zapisz</button>"
     html += "</form>"
 
-    html += "<br><br><a href='/'>⬅ Powrót</a>"
+    html += "<hr><h3>📋 Lista meczów</h3>"
 
-    return html
+    # ===== POBIERZ MECZE =====
+    data = supabase.table("wyniki").select("*").order("id").execute()
 
+    html += "<table>"
+    html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"
+
+    for row in data.data:
+
+        wynik = "-"
+        if row["gol1"] is not None and row["gol2"] is not None:
+            wynik = f"{row['gol1']}:{row['gol2']}"
+
+        html += "<tr>"
+
+
+@app.get("/usun/{id}")
+def usun(id: int):
+
+    supabase.table("wyniki").delete().eq("id", id).execute()
+
+    return RedirectResponse("/admin", status_code=303)
 
 # ===== DODAWANIE =====
 @app.post("/dodaj")
