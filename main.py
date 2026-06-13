@@ -32,11 +32,17 @@ h2, h3 { margin-bottom: 10px; }
 # ===== WYNIKI =====
 def get_wyniki():
     data = supabase.table("wyniki").select("*").execute()
+
     wyniki = {}
 
     for r in data.data:
+        mecz = r["mecz"].strip()
+
+        # ważne: nawet jeśli brak wyniku → wpisujemy None
         if r["gol1"] is not None and r["gol2"] is not None:
-            wyniki[r["mecz"].strip()] = (r["gol1"], r["gol2"])
+            wyniki[mecz] = (r["gol1"], r["gol2"])
+        else:
+            wyniki[mecz] = None
 
     return wyniki
 
@@ -195,7 +201,7 @@ def player(name: str):
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
 
-    data = supabase.table("wyniki").select("*").execute()
+data = supabase.table("wyniki").select("*").order("id").execute()
 
     html = STYLE
     html += "<h2>Panel wyników</h2>"
@@ -226,7 +232,7 @@ def admin():
 async def admin_save(request: Request):
 
     form = await request.form()
-    data = supabase.table("wyniki").select("*").execute()
+    data = supabase.table("wyniki").select("*").order("id").execute()
 
     for i, row in enumerate(data.data):
 
