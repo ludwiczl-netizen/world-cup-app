@@ -256,67 +256,53 @@ def home():
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
 # ===== ADMIN =====
- html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"
-
-@app.get("/admin", response_class=HTMLResponse)@app.get("/admin", response_class']}'>❌</a></td>"
-        html += "</tr>"
-
-    html += "</table>"
-    html += "<br><br><a href='/'>⬅ Powrót</a>"
-
-    return html
-``
+@app.get("/admin", response_class=HTMLResponse)
 def admin():
-
-    html = STYLE
-    html += "<h2>⚙️ Panel admin</h2>"
-
-    html += "<form action='/dodaj' method='post'>"
-    html += "Mecz: <input name='mecz'><br><br>"
-    html += "Wynik: <input name='wynik'><br><br>"
-    html += "<button type='submit'>Zapisz</button>"
-    html += "</form>"
-
-    html += "<hr><h3>📋 Lista meczów</h3>"
 
     data = supabase.table("wyniki").select("*").order("id").execute()
 
+    html = STYLE
+    html += "<h2>Panel wyników</h2>"
+    html += "<form method='post'>"
     html += "<table>"
-    html += "<tr><th>ID</th><th>Mecz</th><th>Wynik</th><th>Akcja</th></tr>"
 
-    for row in data.data:
+    for i, r in enumerate(data.data):
 
-        wynik = "-"
-        if row["gol1"] is not None and row["gol2"] is not None:
-            wynik = f"{row['gol1']}:{row['gol2']}"
+        g1 = "" if r["gol1"] is None else str(r["gol1"])
+        g2 = "" if r["gol2"] is None else str(r["gol2"])
 
         html += "<tr>"
-        html += f"<td>{row['id']}</td>"
-        html += f"<td>{row['mecz']}</td>"
-        html += f"<td>{wynik}</td>"
-@app.get("/usun/{id}")
-def usun(id: int):
+        html += f"<td>{r['mecz']}</td>"
+        html += f"<td><input name='g1_{i}' value='{g1}'></td>"
+        html += f"<td><input name='g2_{i}' value='{g2}'></td>"
+        html += "</tr>"
 
-    supabase.table("wyniki").delete().eq("id", id).execute()
+    html += "</table>"
+    html += "<button>ZAPISZ</button>"
+    html += "</form>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
+
+    return html
+
+# ===== SAVE =====
+@app.post("/admin")
+async def save(request: Request):
+
+    form = await request.form()
+    data = supabase.table("wyniki").select("*").order("id").execute()
+
+    for i, row in enumerate(data.data):
+
+        g1 = form.get(f"g1_{i}")
+        g2 = form.get(f"g2_{i}")
+
+        val1 = None if g1=="" else int(g1) if g1 and g1.isdigit() else row["gol1"]
+        val2 = None if g2=="" else int(g2) if g2 and g2.isdigit() else row["gol2"]
+
+        supabase.table("wyniki").update({
+            "gol1": val1,
+            "gol2": val2
+        }).eq("id", row["id"]).execute()
 
     return RedirectResponse("/admin", status_code=303)
 
-# ===== DODAWANIE =====
-@app.post("/dodaj")
-async def dodaj(request: Request):
-
-    form = await request.form()
-
-    mecz = form.get("mecz")
-    wynik = form.get("wynik")
-
-    if wynik and ":" in wynik:
-        g1, g2 = map(int, wynik.split(":"))
-
-        supabase.table("wyniki").insert({
-            "mecz": mecz,
-            "gol1": g1,
-            "gol2": g2
-        }).execute()
-
-    return RedirectResponse("/", status_code=303)
