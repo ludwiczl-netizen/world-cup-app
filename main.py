@@ -47,7 +47,65 @@ def licz_punkty(typ, wynik):
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-    df = pd.read_excel(FILE)
+@app.get("/", response_class=HTMLResponse)@app.get typ = str(r.get("Typ", "")).strip()
+
+            if mecz == "" or mecz == "nan":
+                continue
+
+            wynik = wyniki.get(mecz)
+
+            if wynik:
+                suma += licz_punkty(typ, wynik)
+
+        ranking.append({
+            "name": sheet,
+            "pkt": suma
+        })
+
+    # sortowanie
+    ranking.sort(key=lambda x: x["pkt"], reverse=True)
+
+    # HTML
+    html = "<h2>🏆 Ranking</h2>"
+    html += "<table border='1'>"
+    html += "<tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>"
+
+    for i, r in enumerate(ranking, 1):
+
+        safe = urllib.parse.quote(r["name"])
+
+        html += "<tr>"
+        html += "<td>" + str(i) + "</td>"
+        html += "<td>gracz/" + safe + "'>" + r["name"] + "</a></td>"
+        html += "<td>" + str(r["pkt"]) + "</td>"
+        html += "</tr>"
+
+    html += "</table>"
+    html += "<br>admin'>⚙️ Panel admin</a>"
+
+    return html
+
+def home():
+
+    xls = pd.ExcelFile(FILE)
+    wyniki = get_wyniki()
+
+    ranking = []
+
+    for sheet in xls.sheet_names:
+
+        if sheet in ["Wyniki", "Ranking", "Instrukcja", "Typy_Zbiorcze"]:
+            continue
+
+        df = pd.read_excel(xls, sheet)
+        df.columns = df.columns.str.strip()
+
+        suma = 0
+
+        for _, r in df.iterrows():
+
+            mecz = str(r.get("Mecz", "")).strip()
+
     df.columns = df.columns.str.strip()
 
     html = "<h2>🏆 Ranking</h2>"
