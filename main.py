@@ -1,19 +1,43 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+
+from fastapi import FastAPI, Requestfrom fastapi import FastAPI,abase import create_client
 import pandas as pd
 import urllib.parse
-
 
 app = FastAPI()
 
 
+# === SUPABASE ===
+SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
+SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# ===== HOME (RANKING) =====
+# === LICZENIE PUNKTÓW ===
+def licz_punkty(typ, wynik):
+    try:
+        t1, t2 = map(int, str(typ).replace("-", ":").split(":"))
+        w1, w2 = wynik
+
+        if t1 == w1 and t2 == w2:
+            return 3
+        if (t1 - t2) * (w1 - w2) > 0:
+            return 1
+        if t1 == t2 and w1 == w2:
+            return 1
+        return 0
+    except:
+        return 0
+
+
+
+# === RANKING ===
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-    df = pd.read_excel("tabela zbiorcza z rankingiem.xlsx")
+    df = pd.read_excel(FILE)
     df.columns = df.columns.str.strip()
 
     html = "<h2>🏆 Ranking</h2>"
@@ -32,43 +56,113 @@ def home():
         html += "</tr>"
 
     html += "</table>"
+    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
 
 
-# ===== STRONA GRACZA =====
 
+
+# === SZCZEGÓŁY GRACZA ===
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
     name = urllib.parse.unquote(name)
 
-    xls = pd.ExcelFile("tabela zbiorcza z rankingiem.xlsx")
+    xls = pd.ExcelFile(FILE)
 
-    # jeśli brak arkusza gracza
     if name not in xls.sheet_names:
-        return "Brak danych dla gracza"
+        return "Brak danych"
 
     df = pd.read_excel(xls, name)
     df.columns = df.columns.str.strip()
 
+    wyniki = get_wyniki()
+
     html = "<h2>" + name + "</h2>"
     html += "<table border='1'>"
-    html += "<tr><th>Mecz</th><th>Typ</th></tr>"
+    html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
 
-    for _, row in df.iterrows():
+    suma = 0
 
-        mecz = str(row.get("Mecz", ""))
-        typ = str(row.get("Typ", ""))
+    for _, r in df.iterrows():
 
-        if mecz != "nan":
+        mecz = str(r.get("Mecz", "")).strip()
+        typ = str(r.get("Typ", "")).strip()
 
-            html += "<tr>"
-            html += "<td>" + mecz + "</td>"
-            html += "<td>" + typ + "</td>"
-            html += "</tr>"
+        if mecz == "" or mecz == "nan":
+            continue
+
+        wynik = wyniki.get(mecz)
+
+        if wynik:
+            pkt = licz_punkty(typ, wynik)
+            suma += pkt
+            wynik_txt = str(wynik[0]) + ":" + str(wynik[1])
+        else:
+            pkt = "-"
+            wynik_txt = "-"
+
+        html += "<tr>"
+        html += "<td>" + mecz + "</td>"
+        html += "<td>" + typ + "</td>"
+        html += "<td>" + wynik_txt + "</td>"
+        html += "<td>" + str(pkt) + "</td>"
+        html += "</tr>"
 
     html += "</table>"
+    html += "<br><b>Suma punktów: " + str(suma) + "</b>"
     html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
+
+
+# === ADMIN ===
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+
+    data = supabase.table("wyniki").select("*").execute()
+
+    html = "<h2>Panel wyników</h2>"
+    html += "<form method='post'>"
+    html += "<table border='1'>"
+
+    for i, r in enumerate(data.data):
+
+        g1 = "" if r["gol1"] is None else str(r["gol1"])
+        g2 = "" if r["gol2"] is None else str(r["gol2"])
+
+        html += "<tr>"
+        html += "<td>" + r["mecz"] + "</td>"
+        html += "<td><input name='g1_" + str(i) + "' value='" + g1 + "'></td>"
+        html += "<td><input name='g2_" + str(i) + "' value='" + g2 + "'></td>"
+        html += "</tr>"
+
+    html += "</table>"
+    html += "<button>ZAPISZ</button>"
+    html += "</form>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
+
+    return html
+
+
+# === ZAPIS ===
+@app.post("/admin")
+async def admin_save(request: Request):
+
+    form = await request.form()
+    data = supabase.table("wyniki").select("*").execute()
+
+    for i, row in enumerate(data.data):
+
+        g1 = form.get("g1_" + str(i))
+        g2 = form.get("g2_" + str(i))
+
+        if g1 and g1.isdigit():
+            supabase.table("wyniki").update({"gol1": int(g1)}).eq("id", row["id"]).execute()
+
+        if g2 and g2.isdigit():
+            supabase.table("wyniki").update({"gol2": int(g2)}).eq("id", row["id"]).execute()
+
+    return RedirectResponse("/admin", status_code=303)
+from fastapi.responses import HTMLResponse, RedirectResponse
