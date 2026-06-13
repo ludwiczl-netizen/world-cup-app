@@ -93,8 +93,10 @@ def home():
 
             wynik = wyniki.get(mecz)
 
-            if wynik:
-                suma += licz_punkty(typ, wynik)
+
+    if wynik is not None:
+        suma += licz_punkty(...)
+
 
         ranking.append({
             "name": sheet,
@@ -165,7 +167,7 @@ def player(name: str):
 
         wynik = wyniki.get(mecz)
 
-        if wynik:
+        if wynik is not None:
             pkt = licz_punkty(typ, wynik)
             suma += pkt
             wynik_txt = str(wynik[0]) + ":" + str(wynik[1])
