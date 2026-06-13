@@ -13,13 +13,13 @@ def home():
 
     html = "<h2>🏆 Ranking</h2>"
     html += "<table border='1'>"
-    html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th></tr>"
+    html += "<tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>"
 
     for i, row in df.iterrows():
         html += "<tr>"
         html += "<td>" + str(i+1) + "</td>"
         html += "<td>" + str(row["Gracz"]) + "</td>"
-        html += "<td>" + str(row["Pkt"]) + "</td>"
+        html += "<td>" + str(row["Punkty"]) + "</td>"
         html += "</tr>"
 
     html += "</table>"
