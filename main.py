@@ -47,8 +47,25 @@ def licz_punkty(typ, wynik):
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-@app.get("/", response_class=HTMLResponse)
-@app.get typ = str(r.get("Typ", "")).strip()
+    xls = pd.ExcelFile(FILE)
+    wyniki = get_wyniki()
+
+    ranking = []
+
+    for sheet in xls.sheet_names:
+
+        if sheet in ["Wyniki", "Ranking", "Instrukcja", "Typy_Zbiorcze"]:
+            continue
+
+        df = pd.read_excel(xls, sheet)
+        df.columns = df.columns.str.strip()
+
+        suma = 0
+
+        for _, r in df.iterrows():
+
+            mecz = str(r.get("Mecz", "")).strip()
+            typ = str(r.get("Typ", "")).strip()
 
             if mecz == "" or mecz == "nan":
                 continue
@@ -63,10 +80,8 @@ def home():
             "pkt": suma
         })
 
-    # sortowanie
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-    # HTML
     html = "<h2>🏆 Ranking</h2>"
     html += "<table border='1'>"
     html += "<tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>"
@@ -77,14 +92,15 @@ def home():
 
         html += "<tr>"
         html += "<td>" + str(i) + "</td>"
-        html += "<td>gracz/" + safe + "'>" + r["name"] + "</a></td>"
+        html += "<td><a href='/gracz/" + safe + "'>" + r["name"] + "</a></td>"
         html += "<td>" + str(r["pkt"]) + "</td>"
         html += "</tr>"
 
     html += "</table>"
-    html += "<br>admin'>⚙️ Panel admin</a>"
+    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
+
 
 def home():
 
