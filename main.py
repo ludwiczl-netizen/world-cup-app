@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from supabase import create_client
@@ -5,87 +6,110 @@ import pandas as pd
 import urllib.parse
 
 import requests
-CACHE_TTL = 300
 import time
+
+# ===== CACHE =====
+CACHE_TTL = 300
 cache = {}
 
-
+# ===== APP =====
 app = FastAPI()
 
+# ===== CONFIG =====
+SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
+SUPABASE_KEY = "TU_WSTAW_SWÓJ_KLUCZ"
+FILE = "tabela zbiorcza z rankingiem.xlsx"
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ===== CACHE =====
+CACHE_TTL = 300
+cache = {}
+
+# ===== STYLE =====
+STYLE = """
+<style>
+body {
+    font-family: Arial;
+    background:#111;
+    color:#eee;
+    margin:0;
+    padding:10px;
+}
+
+h2 {
+    text-align:center;
+    margin:20px 0;
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    background:#1e1e1e;
+}
+
+th {
+    background:#222;
+    padding:10px;
+}
+
+td {
+    padding:8px;
+    border-bottom:1px solid #333;
+}
+
+tr:hover {
+    background:#2a2a2a;
+}
+
+a {
+    color:#4da6ff;
+    text-decoration:none;
+}
+
+img.flag {
+    height:18px;
+    vertical-align:middle;
+    margin-right:5px;
+}
+</style>
+"""
+
+# ===== FLAGI =====
 def get_flag(country):
 
     codes = {
- "Holandia": "nl",        "Polska": "pl",
-        "Japonia": "jp",
-        "Korea Południowa": "kr",
-        "Meksyk": "mx",
-        "Szwajcaria": "ch",
-        "Szwecja": "se",
-        "Turcja": "tr",
-        "Arabia Saudyjska": "sa",
-        "Kanada": "ca",
-        "RPA": "za",
-        "Czechy": "cz",
-        "Bośnia i Hercegowina": "ba",
-        "Paragwaj": "py",
-        "Katar": "qa",
-        "Maroko": "ma",
-        "Haiti": "ht",
-        "Australia": "au",
-        "Curacao": "cw",
-        "Ekwador": "ec",
-        "Wybrzeże Kości Słoniowej": "ci",
-        "Tunezja": "tn",
-        "Republika Zielonego Przylądka": "cv",
-        "Belgia": "be",
-        "Egipt": "eg",
-        "Urugwaj": "uy",
-        "Iran": "ir",
-        "Nowa Zelandia": "nz",
-        "Senegal": "sn",
-        "Irak": "iq",
-        "Norwegia": "no",
-        "Algieria": "dz",
-        "Austria": "at",
-        "Jordania": "jo",
-        "Portugalia": "pt",
-        "DR Konga": "cd",
-        "Chorwacja": "hr",
-        "Ghana": "gh",
-        "Panama": "pa",
-        "Uzbekistan": "uz",
-        "Kolumbia": "co"
+        "Polska":"pl","Niemcy":"de","Francja":"fr","Hiszpania":"es",
+        "USA":"us","Argentyna":"ar","Brazylia":"br","Holandia":"nl",
+        "Japonia":"jp","Korea Południowa":"kr","Meksyk":"mx",
+        "Szwajcaria":"ch","Szwecja":"se","Turcja":"tr",
+        "Arabia Saudyjska":"sa","Kanada":"ca","RPA":"za",
+        "Czechy":"cz","Bośnia i Hercegowina":"ba","Paragwaj":"py",
+        "Katar":"qa","Maroko":"ma","Haiti":"ht","Australia":"au",
+        "Curacao":"cw","Ekwador":"ec","Wybrzeże Kości Słoniowej":"ci",
+        "Tunezja":"tn","Republika Zielonego Przylądka":"cv",
+        "Belgia":"be","Egipt":"eg","Urugwaj":"uy","Iran":"ir",
+        "Nowa Zelandia":"nz","Senegal":"sn","Irak":"iq",
+        "Norwegia":"no","Algieria":"dz","Austria":"at",
+        "Jordania":"jo","Portugalia":"pt","DR Konga":"cd",
+        "Chorwacja":"hr","Ghana":"gh","Panama":"pa",
+        "Uzbekistan":"uz","Kolumbia":"co"
     }
 
     code = codes.get(country)
-
     if code:
         return f"https://flagcdn.com/w20/{code}.png"
-    else:
-        return ""
-
-# ===== MAPA NAZW DO API =====
-name_map = {
-    "Polska": "Poland",
-    "Niemcy": "Germany",
-    "Francja": "France",
-    "Włochy": "Italy",
-    "Hiszpania": "Spain",
-    "Anglia": "England"
-}
+    return ""
 
 # ===== LIVE API =====
 def get_live_match(mecz):
 
-    # ✅ sprawdź cache
     if mecz in cache:
-        data, timestamp = cache[mecz]
-
-        if time.time() - timestamp < CACHE_TTL:
-            return data  # użyj cache
+        data, t = cache[mecz]
+        if time.time() - t < CACHE_TTL:
+            return data
 
     teams = mecz.split("-")
-
     if len(teams) != 2:
         return None
 
@@ -93,10 +117,7 @@ def get_live_match(mecz):
     t2 = teams[1].strip()
 
     url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
-
-    querystring = {
-        "search": f"{t1} vs {t2}"
-    }
+    querystring = {"search": f"{t1} vs {t2}"}
 
     headers = {
         "X-RapidAPI-Key": "TU_WSTAW_KLUCZ",
@@ -104,11 +125,10 @@ def get_live_match(mecz):
     }
 
     try:
-        response = requests.get(url, headers=headers, params=querystring, timeout=5)
-        data = response.json()
+        r = requests.get(url, headers=headers, params=querystring, timeout=5)
+        data = r.json()
 
         fixtures = data.get("response")
-
         if not fixtures:
             return None
 
@@ -118,12 +138,8 @@ def get_live_match(mecz):
         g2 = match["goals"]["away"]
 
         if g1 is not None and g2 is not None:
-
             wynik = (g1, g2)
-
-            # ✅ ZAPIS DO CACHE
             cache[mecz] = (wynik, time.time())
-
             return wynik
 
     except:
@@ -131,18 +147,14 @@ def get_live_match(mecz):
 
     return None
 
-
-# ===== AUTO UPDATE =====
+# ===== UPDATE =====
 def update_missing_results():
 
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     for row in data.data:
-
         if row["gol1"] is None and row["gol2"] is None:
-
             wynik = get_live_match(row["mecz"])
-
             if wynik:
                 supabase.table("wyniki").update({
                     "gol1": wynik[0],
@@ -155,7 +167,6 @@ def get_wyniki():
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     out = {}
-
     for r in data.data:
         if r["gol1"] is not None and r["gol2"] is not None:
             out[r["mecz"].strip()] = (r["gol1"], r["gol2"])
@@ -223,7 +234,8 @@ def home():
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-    html = '<meta http-equiv="refresh" content="30">' + STYLE + "<h2>🏆 Ranking</h2><table>"
+    html = '<meta http-equiv="refresh" content="30">' + STYLE
+    html += "<h2>🏆 Ranking</h2><table>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
     for i, r in enumerate(ranking,1):
@@ -233,73 +245,13 @@ def home():
 
         html += "<tr>"
         html += f"<td>{pos}</td>"
-        html += f"<td>/gracz/{safe}{r['name']}</a></td>"
+        html += f"<td><a href='/gracz/{safe}'>{r['name']}</a></td>"
         html += f"<td>{r['pkt']}</td>"
         html += f"<td>{r['dokladne']}</td>"
         html += "</tr>"
 
     html += "</table>"
-    html += "<br>/admin⚙️ Panel admin</a>"
+    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
-
-# ===== GRACZ =====
-@app.get("/gracz/{name}", response_class=HTMLResponse)
-def player(name: str):
-
-    name = urllib.parse.unquote(name)
-
-    xls = pd.ExcelFile(FILE)
-
-    if name not in xls.sheet_names:
-        return "Brak danych"
-
-    df = pd.read_excel(xls, name)
-    df.columns = df.columns.str.strip()
-
-    wyniki = get_wyniki()
-
-    html = STYLE + f"<h2>{name}</h2><table>"
-    html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
-
-    suma = 0
-
-    for _, r in df.iterrows():
-
-        mecz = str(r.get("Mecz","")).strip()
-        typ = str(r.get("Typ","")).strip()
-
-        if not mecz:
-            continue
-
-        wynik = wyniki.get(mecz)
-
-        teams = mecz.split("-")
-
-        if len(teams) == 2:
-            t1 = teams[0].strip()
-            t2 = teams[1].strip()
-            mecz_html = f"<img class='flag' src='{get_flag(t1)}'>{t1} vs <img class='flag' src='{get_flag(t2)}'>{t2}"
-        else:
-            mecz_html = mecz
-
-        if wynik is not None:
-            pkt = licz_punkty(typ, wynik)
-            suma += pkt
-            wynik_txt = f"{wynik[0]}:{wynik[1]}"
-        else:
-            pkt = "-"
-            wynik_txt = "-"
-
-        html += "<tr>"
-        html += f"<td>{mecz_html}</td>"
-        html += f"<td>{typ}</td>"
-        html += f"<td>{wynik_txt}</td>"
-        html += f"<td>{pkt}</td>"
-        html += "</tr>"
-
-    html += "</table>"
-    html += f"<h3>Suma: {suma}</h3>"
-    html += "<br>/⬅ Powrót</a>"
-
-    return html
+from fastapi.responses import HTMLResponse, RedirectResponse
