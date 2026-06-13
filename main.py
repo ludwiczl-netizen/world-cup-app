@@ -271,12 +271,11 @@ def admin():
     html += "<br><br><a href='/'>⬅ Powrót</a>"
 
     return html
-    @app.post("/dodaj")
-async def dod": g2async def dodaj(request: Request):
-        }).execute()
 
-    return RedirectResponse("/", status_code=303)
 
+# ===== DODAWANIE =====
+@app.post("/dodaj")
+async def dodaj(request: Request):
 
     form = await request.form()
 
@@ -289,3 +288,7 @@ async def dod": g2async def dodaj(request: Request):
         supabase.table("wyniki").insert({
             "mecz": mecz,
             "gol1": g1,
+            "gol2": g2
+        }).execute()
+
+    return RedirectResponse("/", status_code=303)
