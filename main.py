@@ -255,6 +255,69 @@ def home():
 
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
+# ===== GRACZ =====
+@app.get("/gracz/{name}", response_class=HTMLResponse)
+def player(name: str):
+
+    name = urllib.parse.unquote(name)
+
+    xls = pd.ExcelFile(FILE)
+    if name not in xls.sheet_names:
+        return "Brak danych"
+
+    df = pd.read_excel(xls, name)
+    df.columns = df.columns.str.strip()
+
+    wyniki = get_wyniki()
+
+    html = STYLE
+    html += f"<h2>{name}</h2>"
+    html += "<table>"
+    html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
+
+    suma = 0
+
+    for _, r in df.iterrows():
+
+        mecz = str(r.get("Mecz","")).strip()
+        typ = str(r.get("Typ","")).strip()
+
+        if not mecz or mecz == "nan":
+            continue
+
+        wynik = wyniki.get(mecz)
+
+        parts = mecz.split("-")
+
+        if len(parts) == 2:
+            t1 = parts[0].strip()
+            t2 = parts[1].strip()
+            mecz_html = f"{get_flag(t1)}{t1} vs {get_flag(t2)}{t2}"
+        else:
+            mecz_html = mecz
+
+        if wynik is not None:
+            pkt = licz_punkty(typ, wynik)
+            suma += pkt
+            wynik_txt = f"{wynik[0]}:{wynik[1]}"
+        else:
+            pkt = "-"
+            wynik_txt = "-"
+
+        color = "green" if pkt==3 else "orange" if pkt==1 else "red" if pkt==0 else "black"
+
+        html += "<tr>"
+        html += f"<td>{mecz_html}</td>"
+        html += f"<td>{typ}</td>"
+        html += f"<td>{wynik_txt}</td>"
+        html += f"<td style='color:{color}'>{pkt}</td>"
+        html += "</tr>"
+
+    html += "</table>"
+    html += f"<h3>Suma: {suma}</h3>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
+
+    return html
 # ===== ADMIN =====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
