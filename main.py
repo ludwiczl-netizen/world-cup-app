@@ -200,9 +200,10 @@ def player(name: str):
 
 
 # ===== ADMIN =====
-@app.get("/admin", response_class=HTMLResponse)@app.get("/admin", response admin():
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
 
-data = supabase.table("wyniki").select("*").order("id").execute()
+    data = supabase.table("wyniki").select("*").order("id").execute()
 
     html = STYLE
     html += "<h2>Panel wyników</h2>"
@@ -226,7 +227,6 @@ data = supabase.table("wyniki").select("*").order("id").execute()
     html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
-
 
 # ===== ZAPIS =====
 @app.post("/admin")
