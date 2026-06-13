@@ -4,11 +4,8 @@ from supabase import create_client
 import pandas as pd
 import urllib.parse
 
-
 app = FastAPI()
 
-
-# === SUPABASE ===
 SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
 SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
 
@@ -17,7 +14,19 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 
-# === LICZENIE PUNKTÓW ===
+# ===== WYNIKI =====
+def get_wyniki():
+    data = supabase.table("wyniki").select("*").execute()
+    wyniki = {}
+
+    for r in data.data:
+        if r["gol1"] is not None and r["gol2"] is not None:
+            wyniki[r["mecz"].strip()] = (r["gol1"], r["gol2"])
+
+    return wyniki
+
+
+# ===== PUNKTY =====
 def licz_punkty(typ, wynik):
     try:
         t1, t2 = map(int, str(typ).replace("-", ":").split(":"))
@@ -34,8 +43,7 @@ def licz_punkty(typ, wynik):
         return 0
 
 
-
-# === RANKING ===
+# ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
 def home():
 
@@ -63,14 +71,11 @@ def home():
     return html
 
 
-
-
-# === SZCZEGÓŁY GRACZA ===
+# ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
     name = urllib.parse.unquote(name)
-
     xls = pd.ExcelFile(FILE)
 
     if name not in xls.sheet_names:
@@ -113,13 +118,13 @@ def player(name: str):
         html += "</tr>"
 
     html += "</table>"
-    html += "<br><b>Suma punktów: " + str(suma) + "</b>"
+    html += "<br><b>Suma: " + str(suma) + "</b>"
     html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
 
 
-# === ADMIN ===
+# ===== ADMIN =====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
 
@@ -148,7 +153,7 @@ def admin():
     return html
 
 
-# === ZAPIS ===
+# ===== ZAPIS =====
 @app.post("/admin")
 async def admin_save(request: Request):
 
@@ -167,4 +172,3 @@ async def admin_save(request: Request):
             supabase.table("wyniki").update({"gol2": int(g2)}).eq("id", row["id"]).execute()
 
     return RedirectResponse("/admin", status_code=303)
-from fastapi.responses import HTMLResponse, RedirectResponse
