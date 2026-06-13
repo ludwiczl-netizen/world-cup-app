@@ -1,8 +1,7 @@
-from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
-app = FastAPI()
+h2>Ranking start ✅</h2>"@app.get("/", response_class=HTMLResponse)
+    html += "<br>"
+    return html
 
-@app.get("/")
 def home():
-  return "OK ✅"
-
