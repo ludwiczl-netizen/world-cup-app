@@ -36,7 +36,7 @@ def get_points(pred, actual):
 
         if p1 == a1 and p2 == a2:
             return 3
-        if (p1 - p2) * (a1 - a2) > 0:
+        if (p1 - p2) * (a1 - a2) > 0 or (p1 == p2 == a1 == a2):
             return 1
         return 0
     except:
@@ -74,9 +74,13 @@ def get_ranking():
                 if pts == 3:
                     hits += 1
 
-        ranking.append({"name": sheet, "pts": total, "hits": hits})
+        ranking.append({
+            "name": sheet.strip(),
+            "pts": total,
+            "hits": hits
+        })
 
-    return sorted(ranking, key=lambda x: x["pts"], reverse=True)
+    return sorted(ranking, key=lambda x: (x["pts"], x["hits"]), reverse=True)
 
 
 # ===== HOME =====
@@ -89,26 +93,63 @@ def home():
         safe = urllib.parse.quote(r["name"])
 
         rows += f"""
-        <tr onclick="location.href='/gracz/{d>
-            <td>{r['name']}</td>
-            <td>{r['pts']}</td>
-            <td>{r['hits']}</td>
+        <tr onclick="location.href='/gracz/{safe}'" style="cursor:pointer}</td>
+            <td><b>{r['pts']}</b></td>
+            <td>🎯 {r['hits']}</td>
         </tr>
         """
 
     return f"""
     <html>
-    <body style="font-family:Arial">
+    <head>
+    <meta name="viewport" content="width=device-width">
+    <style>
+    body {{
+        background:#f2f2f2;
+        font-family:Arial;
+        margin:0;
+    }}
+    .box {{
+        max-width:500px;
+        margin:auto;
+        padding:10px;
+    }}
+    table {{
+        width:100%;
+        background:white;
+        border-radius:10px;
+        border-collapse:collapse;
+    }}
+    th {{
+        background:black;
+        color:white;
+    }}
+    td, th {{
+        padding:10px;
+        text-align:center;
+    }}
+    tr:hover {{
+        background:#f5f5f5;
+    }}
+    </style>
+    </head>
+
+    <body>
+    <div class="box">
 
     <h2>🏆 Ranking</h2>
 
-    <table border="1">
+    <table>
+    <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>
     {rows}
     </table>
 
     <br>
-    <a href="/admin">⚙️ Panel admin</a>
+    <div style="text-align:center">
+        <a href="/admin">⚙️ Panel admin</a>
+    </div>
 
+    </div>
     </body>
     </html>
     """
@@ -122,7 +163,7 @@ def player(name: str):
     xls = pd.ExcelFile(FILE)
 
     if name not in xls.sheet_names:
-        return "<h2>Brak gracza</h2>"
+        return "<h2>❌ Nie znaleziono gracza</h2>"
 
     df = pd.read_excel(xls, name)
     results = get_results()
@@ -143,9 +184,31 @@ def player(name: str):
             pts = get_points(typ, actual)
             total += pts
 
-            html += f"<div>{match}: {actual[0]}:{actual[1]} ({pts})</div>"
+            html += f"""
+            <div style="background:white;padding:12px;margin:8px;border-radius:10px">
+                {match}<br>
+                <b>{actual[0]}:{actual[1]}</b><br>
+                {pts} pkt
+            </div>
+            """
 
-    return f"<h2>{name} — {total} pkt</h2>{html}"
+    return f"""
+    <html>
+    <body style="font-family:Arial;background:#eee">
+
+    <div style="max-width:500px;margin:auto;padding:10px">
+
+    <a href="/">⬅ Powrót</a>
+
+    <h3>{name} • {total} pkt</h3>
+
+    {html}
+
+    </div>
+
+    </body>
+    </html>
+    """
 
 
 # ===== ADMIN =====
@@ -162,18 +225,30 @@ def admin():
         rows += f"""
         <tr>
             <td>{r['mecz']}</td>
-            <td><input name="g1_{i}" value="{g1}"></td>
-            <td><input name="g2_{i}" value="{g2}"></td>
+            <td><input name="g1_{i}" value="{g1}" style="width:50px"></td>
+            <td><input name="g2_{i}" value="{g2}" style="width:50px"></td>
         </tr>
         """
 
     return f"""
+    <html>
+    <body style="font-family:Arial">
+
+    <h2>⚙️ Panel wyników</h2>
+
+    <a href="/">⬅ Powrót</a><br><br>
+
     <form method="post">
     <table border="1">
     {rows}
     </table>
+
+    <br>
     <button>ZAPISZ</button>
     </form>
+
+    </body>
+    </html>
     """
 
 
