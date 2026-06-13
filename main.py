@@ -4,14 +4,6 @@ from supabase import create_client
 import pandas as pd
 import urllib.parse
 
-app = FastAPI()
-
-SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
-SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-FILE = "tabela zbiorcza z rankingiem.xlsx"
-
 # ===== STYLE =====
 STYLE = """
 <style>
