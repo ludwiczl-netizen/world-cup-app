@@ -30,8 +30,7 @@ def get_results():
 
 # ===== PUNKTY =====
 def get_points(pred, actual):
-    try:
-        p1, p2 = map(int, str(pred).replace("-", ":").split(":"))
+   , p2 = map(int, str(pred).replace("-", ":").split(":"))    try:
         a1, a2 = actual
 
         if p1 == a1 and p2 == a2:
@@ -93,11 +92,29 @@ def home():
         safe = urllib.parse.quote(r["name"])
 
         rows += f"""
-        <tr onclick="location.href='/gracz/{safe}'" style="cursor:pointer}</td>
+        <tr onclick="location.href='/gracz/{safe}'" style  <td>{r['name']}</td>
             <td><b>{r['pts']}</b></td>
             <td>🎯 {r['hits']}</td>
         </tr>
         """
+
+    return f"""
+    <html>
+    <body style="font-family:Arial;background:#f2f2f2">
+
+    <h2>🏆 Ranking</h2>
+
+    <table border="1" style="width:100%;background:white">
+    <tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>
+    {rows}
+    </table>
+
+    <br>
+    <a href="/admin">⚙️ Panel admin</a>
+
+    </body>
+    </html>
+    """
 
     return f"""
     <html>
