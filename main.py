@@ -255,3 +255,37 @@ def home():
 
     return html
 from fastapi.responses import HTMLResponse, RedirectResponse
+# ===== ADMIN =====
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+
+    html = STYLE
+    html += "<h2>⚙️ Panel admin</h2>"
+
+    html += "<form action='/dodaj' method='post'>"
+    html += "Mecz: <input name='mecz'><br><br>"
+    html += "Wynik: <input name='wynik'><br><br>"
+    html += "<button type='submit'>Zapisz</button>"
+    html += "</form>"
+
+    html += "<br><br><a href='/'>⬅ Powrót</a>"
+
+    return html
+    @app.post("/dodaj")
+async def dod": g2async def dodaj(request: Request):
+        }).execute()
+
+    return RedirectResponse("/", status_code=303)
+
+
+    form = await request.form()
+
+    mecz = form.get("mecz")
+    wynik = form.get("wynik")
+
+    if wynik and ":" in wynik:
+        g1, g2 = map(int, wynik.split(":"))
+
+        supabase.table("wyniki").insert({
+            "mecz": mecz,
+            "gol1": g1,
