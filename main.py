@@ -145,4 +145,3 @@ async def admin_save(request: Request):
             supabase.table("wyniki").update({"gol2": int(g2)}).eq("id", row["id"]).execute()
 
     return RedirectResponse("/", status_code=303)
-``
