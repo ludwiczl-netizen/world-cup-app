@@ -59,8 +59,6 @@ def get_flag(country):
         return f"https://flagcdn.com/w20/{code}.png"
     else:
         return ""
-        "Niemcy": "de",
-
 
 # ===== MAPA NAZW DO API =====
 name_map = {
