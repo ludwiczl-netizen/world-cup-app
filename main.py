@@ -5,12 +5,6 @@ from supabase import create_client
 import pandas as pd
 import urllib.parse
 
-import requests
-import time
-
-# ===== CACHE =====
-CACHE_TTL = 300
-cache = {}
 
 # ===== APP =====
 app = FastAPI()
@@ -22,55 +16,26 @@ FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ===== CACHE =====
-CACHE_TTL = 300
-cache = {}
-
 # ===== STYLE =====
 STYLE = """
 <style>
-body {
-    font-family: Arial;
-    background:#111;
-    color:#eee;
-    margin:0;
-    padding:10px;
-}
+body { font-family: Arial; background:#f5f5f5; margin:0; padding:10px; }
+h2 { text-align:center; }
 
-h2 {
-    text-align:center;
-    margin:20px 0;
-}
+table { width:100%; border-collapse:collapse; background:white; }
+th { background:#333; color:white; padding:10px; }
+td { padding:8px; text-align:center; }
 
-table {
-    width:100%;
-    border-collapse:collapse;
-    background:#1e1e1e;
-}
+tr:nth-child(even){ background:#f2f2f2; }
+tr:hover{ background:#ddd; }
 
-th {
-    background:#222;
-    padding:10px;
-}
+a { text-decoration:none; color:#007bff; display:block; }
 
-td {
-    padding:8px;
-    border-bottom:1px solid #333;
-}
+img.flag { height:18px; vertical-align:middle; margin-right:5px; }
 
-tr:hover {
-    background:#2a2a2a;
-}
-
-a {
-    color:#4da6ff;
-    text-decoration:none;
-}
-
-img.flag {
-    height:18px;
-    vertical-align:middle;
-    margin-right:5px;
+@media (max-width:600px){
+ table { font-size:12px; }
+ td,th { padding:6px; }
 }
 </style>
 """
@@ -100,78 +65,34 @@ def get_flag(country):
         return f"<img class='flag' src='https://flagcdn.com/w20/{code}.png'>"
     return ""
 
-# ===== LIVE API =====
+# ===== AUTO WYNIKI (tylko puste!) =====
 def get_live_match(mecz):
-
-    if mecz in cache:
-        data, t = cache[mecz]
-        if time.time() - t < CACHE_TTL:
-            return data
-
-    teams = mecz.split("-")
-    if len(teams) != 2:
-        return None
-
-    t1 = teams[0].strip()
-    t2 = teams[1].strip()
-
-    url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
-    querystring = {"search": f"{t1} vs {t2}"}
-
-    headers = {
-        "X-RapidAPI-Key": "TU_WSTAW_KLUCZ",
-        "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+    demo = {
+        "Polska-Niemcy": (2,1),
+        "Francja-Włochy": (1,0)
     }
+    return demo.get(mecz)
 
-    try:
-        r = requests.get(url, headers=headers, params=querystring, timeout=5)
-        data = r.json()
-
-        fixtures = data.get("response")
-        if not fixtures:
-            return None
-
-        match = fixtures[0]
-
-        g1 = match["goals"]["home"]
-        g2 = match["goals"]["away"]
-
-        if g1 is not None and g2 is not None:
-            wynik = (g1, g2)
-            cache[mecz] = (wynik, time.time())
-            return wynik
-
-    except:
-        return None
-
-    return None
-
-# ===== UPDATE =====
 def update_missing_results():
-
     data = supabase.table("wyniki").select("*").order("id").execute()
-
-    for row in data.data:
-        if row["gol1"] is None and row["gol2"] is None:
-            wynik = get_live_match(row["mecz"])
+    for r in data.data:
+        if r["gol1"] is None and r["gol2"] is None:
+            wynik = get_live_match(r["mecz"])
             if wynik:
                 supabase.table("wyniki").update({
                     "gol1": wynik[0],
                     "gol2": wynik[1]
-                }).eq("id", row["id"]).execute()
+                }).eq("id", r["id"]).execute()
 
 # ===== WYNIKI =====
 def get_wyniki():
-
     data = supabase.table("wyniki").select("*").order("id").execute()
-
     out = {}
     for r in data.data:
         if r["gol1"] is not None and r["gol2"] is not None:
             out[r["mecz"].strip()] = (r["gol1"], r["gol2"])
         else:
             out[r["mecz"].strip()] = None
-
     return out
 
 # ===== PUNKTY =====
@@ -218,7 +139,7 @@ def home():
             mecz = str(r.get("Mecz","")).strip()
             typ = str(r.get("Typ","")).strip()
 
-            if not mecz:
+            if not mecz or mecz == "nan":
                 continue
 
             wynik = wyniki.get(mecz)
@@ -229,17 +150,23 @@ def home():
                 if pkt == 3:
                     dokladne += 1
 
-        ranking.append({"name":sheet,"pkt":suma,"dokladne":dokladne})
+        ranking.append({
+            "name": sheet,
+            "pkt": suma,
+            "dokladne": dokladne
+        })
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-    html = '<meta http-equiv="refresh" content="30">' + STYLE
-    html += "<h2>🏆 Ranking</h2><table>"
+    html = STYLE
+    html += "<h2>🏆 Ranking</h2>"
+    html += "<table>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
     for i, r in enumerate(ranking,1):
 
         safe = urllib.parse.quote(r["name"])
+
         pos = "🥇" if i==1 else "🥈" if i==2 else "🥉" if i==3 else str(i)
 
         html += "<tr>"
@@ -253,7 +180,7 @@ def home():
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
-from fastapi.responses import HTMLResponse, RedirectResponse
+
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
@@ -317,6 +244,7 @@ def player(name: str):
     html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
+
 # ===== ADMIN =====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
@@ -367,4 +295,3 @@ async def save(request: Request):
         }).eq("id", row["id"]).execute()
 
     return RedirectResponse("/admin", status_code=303)
-
