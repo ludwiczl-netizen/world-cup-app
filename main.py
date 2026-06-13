@@ -1,7 +1,9 @@
-
-from fastapi import FastAPI, Requestfrom fastapi import FastAPI,abase import create_client
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from supabase import create_client
 import pandas as pd
 import urllib.parse
+
 
 app = FastAPI()
 
