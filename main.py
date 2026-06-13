@@ -3,11 +3,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from supabase import create_client
 import pandas as pd
 import urllib.parse
-import requests
-import requests
-import time
 
-TL = 300cache = {}
+import requests
+CACHE_TTL = 300
+import time
+cache = {}
 
 
 app = FastAPI()
