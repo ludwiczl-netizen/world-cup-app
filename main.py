@@ -308,4 +308,3 @@ def player(name: str):
 .bronze { color:#cd7f32; }
 
 </style>
-"""
