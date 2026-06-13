@@ -27,7 +27,7 @@ def home():
 
         html += "<tr>"
         html += "<td>" + str(i+1) + "</td>"
-        html += "<td> + "'>" + name + "</a></td>"
+        html += "<td><a href='/gracz/" + safe + "'>" + name + "</a></td>"
         html += "<td>" + str(row["Punkty"]) + "</td>"
         html += "</tr>"
 
