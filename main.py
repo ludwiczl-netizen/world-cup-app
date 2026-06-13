@@ -303,64 +303,6 @@ def player(name: str):
     html += "<br>/⬅ Powrót</a>"
 
     return html
-from fastapi.responses import HTMLResponse, RedirectResponse
-from supabase import create_client
-import pandas as pd
-import urllib.parse
-import requests
-
-# ===== APP =====
-app = FastAPI()
-
-# ===== CONFIG =====
-SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
-SUPABASE_KEY = "TU_WSTAW_SWÓJ_KLUCZ"
-FILE = "tabela zbiorcza z rankingiem.xlsx"
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# ===== STYLE =====
-STYLE = """
-<style>
- Arial;body {
-    background:#111;
-    color:#eee;
-    margin:0;
-    padding:10px;
-}
-
-h2 {
-    text-align:center;
-    margin:20px 0;
-}
-
-table {
-    width:100%;
-    border-collapse:collapse;
-    background:#1e1e1e;
-    border-radius:10px;
-    overflow:hidden;
-}
-
-th {
-    background:#222;
-    padding:12px;
-    font-size:14px;
-}
-
-td {
-    padding:10px;
-    border-bottom:1px solid #333;
-}
-
-tr:hover {
-    background:#2a2a2a;
-}
-
-a {
-    color:#4da6ff;
-}
-
 .gold { color: gold; font-weight:bold; }
 .silver { color: silver; }
 .bronze { color:#cd7f32; }
