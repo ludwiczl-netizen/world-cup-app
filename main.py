@@ -47,7 +47,8 @@ def licz_punkty(typ, wynik):
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-@app.get("/", response_class=HTMLResponse)@app.get typ = str(r.get("Typ", "")).strip()
+@app.get("/", response_class=HTMLResponse)
+@app.get typ = str(r.get("Typ", "")).strip()
 
             if mecz == "" or mecz == "nan":
                 continue
