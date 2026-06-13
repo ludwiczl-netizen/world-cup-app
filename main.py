@@ -44,6 +44,17 @@ def licz_punkty(typ, wynik):
 
 
 # ===== HOME =====
+html = """
+<style Arial; background:#f5f5f5; padding:20px; }<style>
+table { border-collapse: collapse; width:100%; background:white; }
+th { background:#333; color:white; padding:8px; }
+td { padding:8px; text-align:center; }
+tr:nth-child(even) { background:#f2f2f2; }
+a { text-decoration:none; color:#007bff; }
+h2 { margin-bottom: 10px; }
+</style>
+"""
+
 @app.get("/", response_class=HTMLResponse)
 def home():
 
