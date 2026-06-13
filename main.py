@@ -37,13 +37,38 @@ def home():
 
 
 # ===== STRONA GRACZA =====
+
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
 
     name = urllib.parse.unquote(name)
 
+    xls = pd.ExcelFile("tabela zbiorcza z rankingiem.xlsx")
+
+    # jeśli brak arkusza gracza
+    if name not in xls.sheet_names:
+        return "Brak danych dla gracza"
+
+    df = pd.read_excel(xls, name)
+    df.columns = df.columns.str.strip()
+
     html = "<h2>" + name + "</h2>"
-    html += "<br>Tutaj będą szczegóły gracza"
-    html += "<br>/⬅ Powrót</a>"
+    html += "<table border='1'>"
+    html += "<tr><th>Mecz</th><th>Typ</th></tr>"
+
+    for _, row in df.iterrows():
+
+        mecz = str(row.get("Mecz", ""))
+        typ = str(row.get("Typ", ""))
+
+        if mecz != "nan":
+
+            html += "<tr>"
+            html += "<td>" + mecz + "</td>"
+            html += "<td>" + typ + "</td>"
+            html += "</tr>"
+
+    html += "</table>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
