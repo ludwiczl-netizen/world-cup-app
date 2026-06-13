@@ -216,7 +216,7 @@ def admin():
     html += "</table>"
     html += "<button>ZAPISZ</button>"
     html += "</form>"
-    html += "<br>/⬅ Powrót</a>"
+    html += "<br><a href='/'>⬅ Powrót</a>"
 
     return html
 
@@ -233,10 +233,24 @@ async def admin_save(request: Request):
         g1 = form.get("g1_" + str(i))
         g2 = form.get("g2_" + str(i))
 
-        if g1 and g1.isdigit():
-            supabase.table("wyniki").update({"gol1": int(g1)}).eq("id", row["id"]).execute()
+        # jeśli pole puste → ustaw NULL
+        if g1 == "":
+            val1 = None
+        elif g1 and g1.isdigit():
+            val1 = int(g1)
+        else:
+            val1 = row["gol1"]
 
-        if g2 and g2.isdigit():
-            supabase.table("wyniki").update({"gol2": int(g2)}).eq("id", row["id"]).execute()
+        if g2 == "":
+            val2 = None
+        elif g2 and g2.isdigit():
+            val2 = int(g2)
+        else:
+            val2 = row["gol2"]
+
+        supabase.table("wyniki").update({
+            "gol1": val1,
+            "gol2": val2
+        }).eq("id", row["id"]).execute()
 
     return RedirectResponse("/admin", status_code=303)
