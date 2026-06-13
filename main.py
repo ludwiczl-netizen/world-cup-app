@@ -4,3 +4,7 @@ def home():
     html = "<h2>Ranking</h2>"
     html += "/testKlik mnie</div>"
     return html
+
+@app.get("/test")
+def test():
+    return "klik działa ✅"
