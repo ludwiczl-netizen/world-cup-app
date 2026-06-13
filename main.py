@@ -17,7 +17,7 @@ app = FastAPI()
 
 # ===== CONFIG =====
 SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
-SUPABASE_KEY = "TU_WSTAW_SWÓJ_KLUCZ"
+SUPABASE_KEY = "TU_WSTAW_SWOJ_KLUCZ"
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
