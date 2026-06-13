@@ -1,19 +1,66 @@
-from fastapi import FastAPI, Requestfrom fastapi import FastAPI,br","Holandia":"nl",
-        "Japonia":"jp","Korea Południowa":"kr","Meksyk":"mx",
-        "Szwajcaria":"ch","Szwecja":"se","Turcja":"tr",
-        "Arabia Saudyjska":"sa","Kanada":"ca","RPA":"za",
-        "Czechy":"cz","Bośnia i Hercegowina":"ba","Paragwaj":"py",
-        "Katar":"qa","Maroko":"ma","Haiti":"ht","Australia":"au",
-        "Curacao":"cw","Ekwador":"ec","Wybrzeże Kości Słoniowej":"ci",
-        "Tunezja":"tn","Republika Zielonego Przylądka":"cv",
-        "Belgia":"be","Egipt":"eg","Urugwaj":"uy","Iran":"ir",
-        "Nowa Zelandia":"nz","Senegal":"sn","Irak":"iq","Norwegia":"no",
-        "Algieria":"dz","Austria":"at","Jordania":"jo",
-        "Portugalia":"pt","DR Konga":"cd","Chorwacja":"hr",
-        "Ghana":"gh","Panama":"pa","Uzbekistan":"uz","Kolumbia":"co"
+
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from supabase import create_client
+import pandas as pd
+import urllib.parse
+import requests
+
+app = FastAPI()
+
+def get_flag(country):
+
+    codes = {
+ "Holandia": "nl",        "Polska": "pl",
+        "Japonia": "jp",
+        "Korea Południowa": "kr",
+        "Meksyk": "mx",
+        "Szwajcaria": "ch",
+        "Szwecja": "se",
+        "Turcja": "tr",
+        "Arabia Saudyjska": "sa",
+        "Kanada": "ca",
+        "RPA": "za",
+        "Czechy": "cz",
+        "Bośnia i Hercegowina": "ba",
+        "Paragwaj": "py",
+        "Katar": "qa",
+        "Maroko": "ma",
+        "Haiti": "ht",
+        "Australia": "au",
+        "Curacao": "cw",
+        "Ekwador": "ec",
+        "Wybrzeże Kości Słoniowej": "ci",
+        "Tunezja": "tn",
+        "Republika Zielonego Przylądka": "cv",
+        "Belgia": "be",
+        "Egipt": "eg",
+        "Urugwaj": "uy",
+        "Iran": "ir",
+        "Nowa Zelandia": "nz",
+        "Senegal": "sn",
+        "Irak": "iq",
+        "Norwegia": "no",
+        "Algieria": "dz",
+        "Austria": "at",
+        "Jordania": "jo",
+        "Portugalia": "pt",
+        "DR Konga": "cd",
+        "Chorwacja": "hr",
+        "Ghana": "gh",
+        "Panama": "pa",
+        "Uzbekistan": "uz",
+        "Kolumbia": "co"
     }
+
     code = codes.get(country)
-    return f"https://flagcdn.com/w20/{code}.png" if code else ""
+
+    if code:
+        return f"https://flagcdn.com/w20/{code}.png"
+    else:
+        return ""
+        "Niemcy": "de",
+
 
 # ===== MAPA NAZW DO API =====
 name_map = {
