@@ -6,12 +6,27 @@ import urllib.parse
 
 app = FastAPI()
 
+# ===== SUPABASE =====
 SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
 SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
-
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 FILE = "tabela zbiorcza z rankingiem.xlsx"
+
+
+# ===== CSS (WSPÓLNY) =====
+STYLE = """
+<style>
+body { font-family: Arial; background:#f5f5f5; padding:20px; }
+table { border-collapse: collapse; width:100%; background:white; }
+th { background:#333; color:white; padding:8px; }
+td { padding:8px; text-align:center; }
+tr:nth-child(even) { background:#f2f2f2; }
+tr:hover { background:#ddd; cursor:pointer; }
+a { text-decoration:none; color:#007bff; }
+h2, h3 { margin-bottom: 10px; }
+</style>
+"""
 
 
 # ===== WYNIKI =====
@@ -43,18 +58,7 @@ def licz_punkty(typ, wynik):
         return 0
 
 
-# ===== HOME =====
-html = """
-<style Arial; background:#f5f5f5; padding:20px; }<style>
-table { border-collapse: collapse; width:100%; background:white; }
-th { background:#333; color:white; padding:8px; }
-td { padding:8px; text-align:center; }
-tr:nth-child(even) { background:#f2f2f2; }
-a { text-decoration:none; color:#007bff; }
-h2 { margin-bottom: 10px; }
-</style>
-"""
-
+# ===== RANKING (LIVE) =====
 @app.get("/", response_class=HTMLResponse)
 def home():
 
@@ -93,66 +97,32 @@ def home():
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-    html = "<h2>🏆 Ranking</h2>"
-    html += "<table border='1'>"
+    html = STYLE
+    html += "<h2>🏆 Ranking</h2>"
+    html += "<table>"
     html += "<tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>"
 
     for i, r in enumerate(ranking, 1):
 
         safe = urllib.parse.quote(r["name"])
 
+        if i == 1:
+            pos = "🥇"
+        elif i == 2:
+            pos = "🥈"
+        elif i == 3:
+            pos = "🥉"
+        else:
+            pos = str(i)
+
         html += "<tr>"
-        html += "<td>" + str(i) + "</td>"
-        html += "<td><a href='/gracz/" + safe + "'>" + r["name"] + "</a></td>"
+        html += "<td>" + pos + "</td>"
+        html += "<td>/gracz/" + safe + "'>" + r["name"] + "</a></td>"
         html += "<td>" + str(r["pkt"]) + "</td>"
         html += "</tr>"
 
     html += "</table>"
-    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
-
-    return html
-
-
-def home():
-
-    xls = pd.ExcelFile(FILE)
-    wyniki = get_wyniki()
-
-    ranking = []
-
-    for sheet in xls.sheet_names:
-
-        if sheet in ["Wyniki", "Ranking", "Instrukcja", "Typy_Zbiorcze"]:
-            continue
-
-        df = pd.read_excel(xls, sheet)
-        df.columns = df.columns.str.strip()
-
-        suma = 0
-
-        for _, r in df.iterrows():
-
-            mecz = str(r.get("Mecz", "")).strip()
-
-    df.columns = df.columns.str.strip()
-
-    html = "<h2>🏆 Ranking</h2>"
-    html += "<table border='1'>"
-    html += "<tr><th>#</th><th>Gracz</th><th>Punkty</th></tr>"
-
-    for i, row in df.iterrows():
-
-        name = str(row["Gracz"])
-        safe = urllib.parse.quote(name)
-
-        html += "<tr>"
-        html += "<td>" + str(i+1) + "</td>"
-        html += "<td><a href='/gracz/" + safe + "'>" + name + "</a></td>"
-        html += "<td>" + str(row["Punkty"]) + "</td>"
-        html += "</tr>"
-
-    html += "</table>"
-    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
+    html += "<br>/admin⚙️ Panel admin</a>"
 
     return html
 
@@ -172,8 +142,9 @@ def player(name: str):
 
     wyniki = get_wyniki()
 
-    html = "<h2>" + name + "</h2>"
-    html += "<table border='1'>"
+    html = STYLE
+    html += "<h2>" + name + "</h2>"
+    html += "<table>"
     html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
 
     suma = 0
@@ -196,16 +167,26 @@ def player(name: str):
             pkt = "-"
             wynik_txt = "-"
 
+        # kolor punktów
+        if pkt == 3:
+            color = "green"
+        elif pkt == 1:
+            color = "orange"
+        elif pkt == 0:
+            color = "red"
+        else:
+            color = "black"
+
         html += "<tr>"
         html += "<td>" + mecz + "</td>"
         html += "<td>" + typ + "</td>"
         html += "<td>" + wynik_txt + "</td>"
-        html += "<td>" + str(pkt) + "</td>"
+        html += "<td style='color:" + color + "'>" + str(pkt) + "</td>"
         html += "</tr>"
 
     html += "</table>"
-    html += "<br><b>Suma: " + str(suma) + "</b>"
-    html += "<br><a href='/'>⬅ Powrót</a>"
+    html += "<h3>🔥 Suma: " + str(suma) + "</h3>"
+    html += "<br>/⬅ Powrót</a>"
 
     return html
 
@@ -216,9 +197,10 @@ def admin():
 
     data = supabase.table("wyniki").select("*").execute()
 
-    html = "<h2>Panel wyników</h2>"
+    html = STYLE
+    html += "<h2>Panel wyników</h2>"
     html += "<form method='post'>"
-    html += "<table border='1'>"
+    html += "<table>"
 
     for i, r in enumerate(data.data):
 
@@ -234,7 +216,7 @@ def admin():
     html += "</table>"
     html += "<button>ZAPISZ</button>"
     html += "</form>"
-    html += "<br><a href='/'>⬅ Powrót</a>"
+    html += "<br>/⬅ Powrót</a>"
 
     return html
 
