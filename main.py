@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get return "OK ✅"@app.get("/")
-
+@app.get("/")
 def home():
+  return "OK ✅"
+
