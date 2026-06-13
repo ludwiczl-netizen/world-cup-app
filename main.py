@@ -1,3 +1,6 @@
+import time
+
+ = 300  # 5 minutcache = {}
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -73,24 +76,34 @@ name_map = {
 # ===== LIVE API =====
 def get_live_match(mecz):
 
+    # ✅ sprawdź cache
+    if mecz in cache:
+        data, timestamp = cache[mecz]
+
+        if time.time() - timestamp < CACHE_TTL:
+            return data  # użyj cache
+
     teams = mecz.split("-")
+
     if len(teams) != 2:
         return None
 
-    t1 = name_map.get(teams[0].strip(), teams[0].strip())
-    t2 = name_map.get(teams[1].strip(), teams[1].strip())
+    t1 = teams[0].strip()
+    t2 = teams[1].strip()
 
     url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
 
-    querystring = {"search": f"{t1} vs {t2}"}
+    querystring = {
+        "search": f"{t1} vs {t2}"
+    }
 
     headers = {
-        "X-RapidAPI-Key": "TU_WSTAW_KLUCZ_API",
+        "X-RapidAPI-Key": "TU_WSTAW_KLUCZ",
         "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
     }
 
     try:
-        response = requests.get(url, headers=headers, params=querystring)
+        response = requests.get(url, headers=headers, params=querystring, timeout=5)
         data = response.json()
 
         fixtures = data.get("response")
@@ -104,7 +117,13 @@ def get_live_match(mecz):
         g2 = match["goals"]["away"]
 
         if g1 is not None and g2 is not None:
-            return (g1, g2)
+
+            wynik = (g1, g2)
+
+            # ✅ ZAPIS DO CACHE
+            cache[mecz] = (wynik, time.time())
+
+            return wynik
 
     except:
         return None
@@ -203,7 +222,7 @@ def home():
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-    html = STYLE + "<h2>🏆 Ranking</h2><table>"
+    html = '<meta http-equiv="refresh" content="30">' + STYLE + "<h2>🏆 Ranking</h2><table>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
     for i, r in enumerate(ranking,1):
@@ -302,19 +321,48 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ===== STYLE =====
 STYLE = """
 <style>
-body { font-family: Arial; background:#f5f5f5; margin:0; padding:10px; }
-h2 { text-align:center; }
-table { width:100%; border-collapse:collapse; background:white; }
-th { background:#333; color:white; padding:10px; }
-td { padding:8px; text-align:center; }
-tr:nth-child(even){ background:#f2f2f2; }
-tr:hover{ background:#ddd; }
-a { text-decoration:none; color:#007bff; }
-img.flag { height:18px; vertical-align:middle; margin-right:5px; }
+ Arial;body {
+    background:#111;
+    color:#eee;
+    margin:0;
+    padding:10px;
+}
+
+h2 {
+    text-align:center;
+    margin:20px 0;
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    background:#1e1e1e;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th {
+    background:#222;
+    padding:12px;
+    font-size:14px;
+}
+
+td {
+    padding:10px;
+    border-bottom:1px solid #333;
+}
+
+tr:hover {
+    background:#2a2a2a;
+}
+
+a {
+    color:#4da6ff;
+}
+
+.gold { color: gold; font-weight:bold; }
+.silver { color: silver; }
+.bronze { color:#cd7f32; }
+
 </style>
 """
-
-# ===== FLAGI (OBRAZY) =====
-def get_flag(country):
-    codes = {
-        "Polska":"pl","Niemcy":"de","Francja":"fr","Hiszpania":"es",
