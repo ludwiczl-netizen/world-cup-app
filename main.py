@@ -303,8 +303,3 @@ def player(name: str):
     html += "<br>/⬅ Powrót</a>"
 
     return html
-.gold { color: gold; font-weight:bold; }
-.silver { color: silver; }
-.bronze { color:#cd7f32; }
-
-</style>
