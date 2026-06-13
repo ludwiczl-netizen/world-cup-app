@@ -75,7 +75,8 @@ def home():
 
     for sheet in xls.sheet_names:
 
-        if sheet in ["Wyniki", "Ranking", "Instrukcja", "Typy_Zbiorcze"]:
+        # ✅ bezpieczny filtr (nie wycina przez spacje / wielkość liter)
+        if sheet.strip().lower() in ["wyniki", "ranking", "instrukcja", "typy_zbiorcze"]:
             continue
 
         df = pd.read_excel(xls, sheet)
@@ -93,18 +94,19 @@ def home():
 
             wynik = wyniki.get(mecz)
 
-
-    if wynik is not None:
-        suma += licz_punkty(...)
-
+            # ✅ poprawna obsługa None
+            if wynik is not None:
+                suma += licz_punkty(typ, wynik)
 
         ranking.append({
             "name": sheet,
             "pkt": suma
         })
 
+    # ✅ sortowanie
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
+    # ✅ HTML
     html = STYLE
     html += "<h2>🏆 Ranking</h2>"
     html += "<table>"
@@ -133,7 +135,6 @@ def home():
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
-
 
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
