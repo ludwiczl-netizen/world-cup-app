@@ -200,8 +200,7 @@ def player(name: str):
 
 
 # ===== ADMIN =====
-@app.get("/admin", response_class=HTMLResponse)
-def admin():
+@app.get("/admin", response_class=HTMLResponse)@app.get("/admin", response admin():
 
 data = supabase.table("wyniki").select("*").order("id").execute()
 
