@@ -231,23 +231,31 @@ def get_flag(country):
     return ""
 
 # ===== AUTO WYNIKI (tylko puste!) =====
+def normalize(m):def normalize(" ", "").lower()
+
 def get_live_match(mecz):
     demo = {
-        "Polska-Niemcy": (2,1),
-        "Francja-Włochy": (1,0)
+        "polska-niemcy": (2,1),
+        "francja-włochy": (1,0)
     }
-    return demo.get(mecz)
+    return demo.get(normalize(mecz))
 
 def update_missing_results():
     data = supabase.table("wyniki").select("*").order("id").execute()
+
     for r in data.data:
         if r["gol1"] is None and r["gol2"] is None:
+
             wynik = get_live_match(r["mecz"])
+
             if wynik:
+                print(f"Update: {r['mecz']} -> {wynik}")
+
                 supabase.table("wyniki").update({
                     "gol1": wynik[0],
                     "gol2": wynik[1]
                 }).eq("id", r["id"]).execute()
+
 
 # ===== WYNIKI =====
 def get_wyniki():
