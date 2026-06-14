@@ -86,6 +86,46 @@ img.flag {
         overflow-x:auto;
     }
 }
+/* ===== KARTY ===== *//* ===== KART    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.card {
+    background:#1a1a1a;
+    padding:12px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* mecz */
+.card .match {
+    font-size:14px;
+    margin-bottom:6px;
+}
+
+/* dolny rząd */
+.row {
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+}
+
+/* mobile boost */
+@media (max-width:600px){
+    .card {
+        padding:10px;
+    }
+
+    .row {
+        flex-direction:column;
+        gap:4px;
+    }
+}
+
+
+.cards {
+
 </style>
 """
 
@@ -250,8 +290,7 @@ def player(name: str):
 
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += f"<h2>{name}</h2>"
-    html += "<table>"
-    html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
+    html += "<div class='cards'>"
 
     suma = 0
 
@@ -284,14 +323,17 @@ def player(name: str):
 
         cls = "p3" if pkt==3 else "p1" if pkt==1 else "p0" if pkt==0 else ""
 
-        html += "<tr>"
-        html += f"<td><span class='match'>{mecz_html}</span></td>"
-        html += f"<td>{typ}</td>"
-        html += f"<td><span class='{cls}'>{wynik_txt}</span></td>"
-        html += f"<td><span class='{cls}'>{pkt}</span></td>"
-        html += "</tr>"
+        html += "<div class='card'>"html += "<div class='card'> class='match'><span class='match'>{mecz_html}</span></div>"
 
-    html += "</table>"
+        html += "<div class='row'>"
+        html += f"<span>Typ: {typ}</span>"
+        html += f"<span class='{cls}'>Wynik: {wynik_txt}</span>"
+        html += f"<span class='{cls}'>Pkt: {pkt}</span>"
+        html += "</div>"
+
+        html += "</div>"
+
+    html += "</div>"
     html += f"<h3>Suma: {suma}</h3>"
     html += "<br><a href='/'>⬅ Powrót</a>"
 
