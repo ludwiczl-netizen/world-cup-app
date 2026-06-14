@@ -387,9 +387,8 @@ def admin():
 
         html += "<tr>"
         html += f"<td>{r['mecz']}</td>"
-        html += f"<td>{r['mecz']}</td>"
-        html += f"<html += f"<td><input class='score' name='g1_{i}' value='{g1}'></td>"
-        html += f"<td><input class='score' name='g2_{i}' value='{g2}'></td>"
+        html += f"<td><input class='score' name='g1_{i}' value='{g1}' /></td>"
+        html += f"<td><input class='score' name='g2_{i}' value='{g2}' /></td>"
         html += "</tr>"
 
     html += "</table>"
