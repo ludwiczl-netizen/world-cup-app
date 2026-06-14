@@ -231,7 +231,9 @@ def get_flag(country):
     return ""
 
 # ===== AUTO WYNIKI (tylko puste!) =====
-def normalize(m):def normalize(" ", "").lower()
+
+def normalize(m):
+    return m.replace(" ", "").lower()
 
 def get_live_match(mecz):
     demo = {
