@@ -29,10 +29,12 @@ STYLE = """
 
 
 table {
-    width}    width:100%;
+    width:100%;
+    max-width:800px;   /* 🔥 kontrola szerokości */
+    margin:auto;       /* 🔥 centrowanie */
     border-collapse:collapse;
-    table-layout: fixed;
-
+    table-layout:fixed;
+}
 
 
 th {
