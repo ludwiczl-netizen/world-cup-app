@@ -152,7 +152,8 @@ img.flag {
 </style>
 """
 
-/* ===== DESKTOP GRID ===== *//* =====.cards {
+/* ===== DESKTOP GRID ===== *//* =====
+.cards {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
