@@ -80,13 +80,20 @@ img.flag {
 }
 
 /* MOBILE */
-@media (max-width:600px){
-    table {
+@media (max-width:600px){@media (max-width:600 overflow-x:auto;
+        white-space:nowrap;
+    }
+
+    th, td {
         font-size:12px;
-        display:block;
-        overflow-x:auto;
+        padding:6px;
     }
 }
+
+    table {
+        display:block;
+        width:100%;
+
 /* ===== KARTY ===== */
 
 .cards {
@@ -144,8 +151,8 @@ img.flag {
 
 
 input.score {
-    width:28px;
-    height:24px;
+    width:28px !important;
+    height:24px !important;
     text-align:center;
     padding:2px;
     font-size:13px;
