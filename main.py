@@ -283,7 +283,7 @@ def player(name: str):
         html += "<tr>"
         html += f"<td>{mecz_html}</td>"
         html += f"<td>{typ}</td>"
-        html += f"<td>{wynik_txt}</td>"
+        html += f"<td class='{cls}'>{wynik_txt}</td>"
         html += f"<td class='{cls}'>{pkt}</td>"
         html += "</tr>"
 
