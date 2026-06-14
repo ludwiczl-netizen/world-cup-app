@@ -168,7 +168,7 @@ body {
     margin:0;
     padding:10px;
     
-    max-width:1200px;   /* 🔥 DODAJ */
+    max-width:1400px;   /* 🔥 DODAJ */
     margin:auto;       /* 🔥 DODAJ */
 }
 
