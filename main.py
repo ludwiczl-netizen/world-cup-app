@@ -23,6 +23,11 @@ STYLE = """
 
 /* ===== TABELA (RANKING + ADMIN) ===== */
 
+* {
+    box-sizing: border-box;
+}
+
+
 table {
     width}    width:100%;
     border-collapse:collapse;
@@ -41,13 +46,14 @@ td {
     border-bottom:1px solid #2a2a2a;
 }
 /* ✅ SZEROKOŚCI KOLUMN (ranking) */
-th:nth-child(1), td:nth-child(1) { width:40px; }   /* # */
-th:nth-child(3), td:nth-child(3) { width:50px; }   /* pkt */
-th:nth-child(4), td:nth-child(4) { width:50px; }   /* 🎯 */
+
+th:nth-child(1), td:nth-child(1) { width:36px; }
+th:nth-child(3), td:nth-child(3) { width:45px; }
+th:nth-child(4), td:nth-child(4) { width:45px; }
+
 
 th:nth-child(2), td:nth-child(2) {
     width:auto;
-    text-align:left;
 }
 
 
