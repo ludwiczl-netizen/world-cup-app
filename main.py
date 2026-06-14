@@ -273,7 +273,7 @@ TEAM_MAP = {
     "uzbekistan": "uzbekistan",
     "kolumbia": "colombia",
     "szkocja": "scotland",
-    "anglia": "england"
+    "anglia": "england",
     "niemcy": "germany",
     "francja": "france",
     "hiszpania": "spain",
