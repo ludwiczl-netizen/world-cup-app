@@ -507,9 +507,7 @@ def player(name: str):
         else:
             mecz_html = mecz
 
-status_badge = ""
-
-if wynik is not None:
+status_badge = ""status_badge is not None:
     pkt = licz_punkty(typ, wynik)
     suma += pkt
     wynik_txt = f"{wynik[0]}:{wynik[1]}"
@@ -519,11 +517,13 @@ if wynik is not None:
     if live and len(live) == 3:
         status = live[2]
 
+        # 🔴 tylko LIVE
         if status in ["1H", "2H"]:
             status_badge = " <span class='live'>🔴 LIVE</span>"
-        else:
-            pkt = "-"
-            wynik_txt = "-"
+
+else:
+    pkt = "-"
+    wynik_txt = "-"
 
         cls = "p3" if pkt==3 else "p1" if pkt==1 else "p0" if pkt==0 else ""
 
