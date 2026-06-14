@@ -133,6 +133,26 @@ img.flag {
 
 .cards {
 
+}
+
+/*:40px;/* ✅ DODAJ TU */
+    text-align:center;
+    padding:4px;
+}
+
+</style>
+"""
+
+.score {
+    width:40px;
+    padding:4px;    text-align:center;
+    background:#111;
+    color:white;
+    border:1px solid #444;
+    border-radius:6px;
+}
+
+
 /* ===== DESKTOP GRID ===== *//* ===== DESKTOP GRID =====:grid;
     grid-template-columns: 1fr;
     gap:12px;
