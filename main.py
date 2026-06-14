@@ -18,7 +18,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
 STYLE = """
-<style;<style>
+<style>
 }
 
 /* ===== TABELA (RANKING + ADMIN) ===== */
