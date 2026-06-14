@@ -236,7 +236,7 @@ def home():
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-    html = STYLE
+    html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>🏆 Ranking</h2>"
     html += "<table>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
@@ -273,7 +273,7 @@ def player(name: str):
 
     wyniki = get_wyniki()
 
-    html = STYLE
+    html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += f"<h2>{name}</h2>"
     html += "<table>"
     html += "<tr><th>Mecz</th><th>Typ</th><th>Wynik</th><th>Pkt</th></tr>"
@@ -328,7 +328,7 @@ def admin():
 
     data = supabase.table("wyniki").select("*").order("id").execute()
 
-    html = STYLE
+    html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>Panel wyników</h2>"
     html += "<form method='post'>"
     html += "<table>"
