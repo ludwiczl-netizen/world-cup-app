@@ -18,20 +18,10 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
 STYLE = """
-<style>
-body {
-    font-family: Arial;
-    background:#0f0f0f;
-    color:#e0e0e0;
-    margin:0;
-    padding:10px;
+<style;<style>
 }
 
-h2 {
-    text-align:center;
-    margin:15px 0;
-}
-
+/* ===== TABELA (RANKING + ADMIN) ===== */
 table {
     width:100%;
     border-collapse:collapse;
@@ -41,47 +31,51 @@ th {
     background:#222;
     padding:12px;
     color:#aaa;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
 }
 
 td {
     padding:10px;
     border-bottom:1px solid #2a2a2a;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
 }
 
+/* hover */
 tr:hover {
     background:#252525;
 }
 
+/* linki */
 a {
     color:#4da6ff;
     text-decoration:none;
 }
 
-/* TOP 3 */
+/* ===== TOP 3 ===== */
 table.ranking tr:nth-child(2) td { color:#ffd700; font-weight:bold; }
 table.ranking tr:nth-child(3) td { color:#c0c0c0; }
 table.ranking tr:nth-child(4) td { color:#cd7f32; }
 
-/* PUNKTY */
+/* ===== PUNKTY ===== */
 .p3 { color:#4caf50; font-weight:bold; }
-.p1 { color:#ffd54f; }   /* bardziej żółty */
+.p1 { color:#ffd54f; }
 .p0 { color:#ef5350; }
 
+/* ===== MECZ ===== */
 .match {
-    color: #e0e0e0 !important;
+    color:#e0e0e0 !important;
 }
 
+/* ===== FLAGI ===== */
 img.flag {
     height:16px;
 }
 
-/* MOBILE */
-@media (max-width:600px){@media (max-width:600 overflow-x:auto;
+/* ===== MOBILE TABELA (ranking/admin) ===== */
+@media (max-width:600px){
+    table {
+        display:block;
+        overflow-x:auto;
         white-space:nowrap;
+        width:100%;
     }
 
     th, td {
@@ -90,82 +84,30 @@ img.flag {
     }
 }
 
-    table {
-        display:block;
-        width:100%;
-
-/* ===== KARTY ===== */
-
+/* ===== KARTY (player view) ===== */
 .cards {
     display:grid;
-    grid-template-columns: .card {    grid-template-columns: 1fr;
+    grid-template-columns:1fr;
+    gap:12px;
+}
+
+.card {
     background:#1a1a1a;
     padding:12px;
     border-radius:10px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.4);
-    max-width:600px;
-    margin:auto;
 }
 
-/* mecz */
 .card .match {
-    font-size:14px;
     margin-bottom:6px;
 }
 
-/* ✅ TO CI BRAKUJE */
 .row {
     display:flex;
     gap:10px;
     flex-wrap:wrap;
 }
 
-/* desktop siatka */
-@media (min-width:800px){
-    .cards {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width:800px){
-    .cards {
-        grid-template-columns: repeat(2, 1fr);
-        gap:12px;
-    }
-}
-    gap:12px;
-}
-
-
-}
-
-
-.cards {
-
-}
-
-/*:40px;/* ✅ DODAJ TU */
-    text-align:center;
-    padding:4px;
-}
-
-
-input.score {
-    width:28px !important;
-    height:24px !important;
-    text-align:center;
-    padding:2px;
-    font-size:13px;
-}
-
-/* ===== DESKTOP GRID ===== *//* =====
-.cards {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-}
-
-/* desktop */
+/* ===== DESKTOP GRID ===== */
 @media (min-width:800px){
     .cards {
         grid-template-columns: repeat(2, 1fr);
@@ -178,13 +120,46 @@ input.score {
     }
 }
 
-    th, td {
-        padding:6px;
-        font-size:12px;
-    }
+/* ===== INPUTY (ADMIN) ===== */
+input.score {
+    width:26px !important;
+    height:24px !important;
+    text-align:center;
+    padding:2px !important;
+    font-size:13px;
+    background:#111;
+    color:#fff;
+    border:1px solid #444;
+    border-radius:6px;
 }
+
+/* ===== BUTTON ===== */
+button {
+    margin-top:10px;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#4da6ff;
+    color:white;
+    width:100%;
+}
+
 </style>
 """
+``
+
+/* ===== PODSTAWA ===== */
+body {
+    font-family: Arial;
+    background:#0f0f0f;
+    color:#e0e0e0;
+    margin:0;
+    padding:10px;
+}
+
+h2 {
+    text-align:center;
+
 
 # ===== FLAGI (działają na Windows) =====
 def get_flag(country):
