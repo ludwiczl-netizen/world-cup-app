@@ -17,12 +17,11 @@ FILE = "tabela zbiorcza z rankingiem.xlsx"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
-STYLE = """
-<style>
-body0e0e0;body {
-    margin:0;
-    padding:10px;
+STYLE = """STYLE {
+    font-family: Arial;
+    background:#0f0f0f;
 }
+
 
 h2 {
     text-align:center;
@@ -109,9 +108,6 @@ button {
 }
 </style>
 """
-    font-family: Arial;
-    background:#0f0f0f;
-
 
 # ===== FLAGI (działają na Windows) =====
 def get_flag(country):
