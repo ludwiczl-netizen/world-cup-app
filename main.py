@@ -91,14 +91,12 @@ img.flag {
 /* ===== MOBILE TABELA (ranking/admin) ===== */
 @media (max-width:600px){
     table {
-        display:block;
-        overflow-x:auto;
         width:100%;
     }
 
     th, td {
         font-size:12px;
-        padding:6px;
+        padding:4px;
         white-space:nowrap;
     }
 }
@@ -298,6 +296,7 @@ def home():
 
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>🏆 Ranking</h2>"
+    html += "<div class='table-wrap'>"
     html += "<table class='ranking'>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
@@ -317,7 +316,7 @@ def home():
         html += f"<td>{r['dokladne']}</td>"
         html += "</tr>"
 
-    html += "</table>"
+    html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
