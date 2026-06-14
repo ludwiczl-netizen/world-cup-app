@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from supabase import create_client
 import pandas as pd
 import urllib.parse
+import requests
+import time
 
 
 # ===== APP =====
@@ -231,18 +233,60 @@ def get_flag(country):
     return ""
 
 # ===== AUTO WYNIKI (tylko puste!) =====
+API_KEY = "5f796b64739119baa3aa0c5571feecd3"
+last_update = 0
 
 def normalize(m):
     return m.replace(" ", "").lower()
 
 def get_live_match(mecz):
-    demo = {
-        "polska-niemcy": (2,1),
-        "francja-włochy": (1,0)
-    }
-    return demo.get(normalize(mecz))
+    try:
+        team1, team2 = mecz.split("-")
+        team1 = team1.strip()
+        team2 = team2.strip()
+
+        url = "https://v3.football.api-sports.io/fixtures"
+
+        headers = {
+            "x-apisports-key": API_KEY
+        }
+
+        params = {
+            "live": "all"
+        }
+
+        res = requests.get(url, headers=headers, params=params)
+        data = res.json()
+
+        if "response" not in data:
+            return None
+
+        for match in data["response"]:
+            home = match["teams"]["home"]["name"]
+            away = match["teams"]["away"]["name"]
+
+            if normalize(team1) in normalize(home) and normalize(team2) in normalize(away):
+
+                g1 = match["goals"]["home"]
+                g2 = match["goals"]["away"]
+
+                if g1 is not None and g2 is not None:
+                    return (g1, g2)
+
+        return None
+
+    except:
+        return None
 
 def update_missing_results():
+    global last_update
+
+    # nie odpytywać API co odświeżenie
+    if time.time() - last_update < 60:
+        return
+
+    last_update = time.time()
+
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     for r in data.data:
