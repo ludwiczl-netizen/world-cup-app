@@ -17,11 +17,15 @@ FILE = "tabela zbiorcza z rankingiem.xlsx"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
-STYLE = """STYLE {
+STYLE = """
+<style>
+body {
     font-family: Arial;
     background:#0f0f0f;
+    color:#e0e0e0;
+    margin:0;
+    padding:10px;
 }
-
 
 h2 {
     text-align:center;
@@ -39,7 +43,6 @@ table {
 th {
     background:#222;
     padding:12px;
-    font-size:14px;
     color:#aaa;
 }
 
@@ -55,59 +58,33 @@ tr:hover {
 a {
     color:#4da6ff;
     text-decoration:none;
-    display:block;
 }
 
-/* 🔥 TOP 3 — subtelnie */
-tr:nth-child(2) td { font-weight:bold; color:#ffd700; }  /* złoty */
-tr:nth-child(3) td { color:#c0c0c0; }                   /* srebrny */
-tr:nth-child(4) td { color:#cd7f32; }                   /* brąz */
+/* TOP 3 */
+tr:nth-child(2) td { color:#ffd700; font-weight:bold; }
+tr:nth-child(3) td { color:#c0c0c0; }
+tr:nth-child(4) td { color:#cd7f32; }
 
-/* ✅ punkty (delikatne) */
-td.p3 { color:#4caf50; font-weight:bold; }   /* zielony */
-td.p1 { color:#ffb74d; }                     /* pomarańczowy */
-td.p0 { color:#ef5350; }                     /* czerwony */
+/* PUNKTY */
+td.p3 { color:#4caf50; font-weight:bold; }
+td.p1 { color:#ffb74d; }
+td.p0 { color:#ef5350; }
 
-/* FLAGI */
 img.flag {
     height:16px;
-    margin-right:4px;
 }
 
 /* MOBILE */
 @media (max-width:600px){
-
-    body { padding:5px; }
-
-    h2 { font-size:18px; }
-
     table {
         font-size:12px;
         display:block;
         overflow-x:auto;
     }
-
-    td, th {
-        padding:6px;
-    }
-
-    td {
-        word-break: break-word;
-    }
-}
-
-/* BUTTON */
-button {
-    background:#4da6ff;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    margin-top:10px;
-    width:100%;
 }
 </style>
 """
+
 
 # ===== FLAGI (działają na Windows) =====
 def get_flag(country):
