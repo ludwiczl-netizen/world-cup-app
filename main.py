@@ -35,10 +35,6 @@ h2 {
 table {
     width:100%;
     border-collapse:collapse;
-    background:#1a1a1a;
-    border-radius:10px;
-    overflow:hidden;
-    table-layout: fixed;
 }
 
 th {
@@ -124,9 +120,10 @@ img.flag {
     }
 }
 
-@media (min-width:1200px){
+@media (min-width:800px){
     .cards {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
+        gap:12px;
     }
 }
     gap:12px;
@@ -146,16 +143,12 @@ img.flag {
 }
 
 
-.score {
-    width:32px;            /* było 40 → mniejsze */
-    height:28px;
+input.score {
+    width:28px;
+    height:24px;
     text-align:center;
     padding:2px;
-    background:#111;
-    color:white;
-    border:1px solid #444;
-    border-radius:6px;
-    font-size:14px;
+    font-size:13px;
 }
 
 /* ===== DESKTOP GRID ===== *//* =====
@@ -172,12 +165,11 @@ img.flag {
     }
 }
 
-@media (max-width:600px){
-
-    table {
-        font-size:12px;
-        width:100%;
+@media (min-width:1200px){
+    .cards {
+        grid-template-columns: repeat(3, 1fr);
     }
+}
 
     th, td {
         padding:6px;
