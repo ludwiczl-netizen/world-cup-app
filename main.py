@@ -170,9 +170,6 @@ img.flag {
 </style>
 """
 
-.cards {
-
-
 # ===== FLAGI (działają na Windows) =====
 def get_flag(country):
     codes = {
