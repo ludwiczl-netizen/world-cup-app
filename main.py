@@ -138,6 +138,22 @@ img.flag {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+/* ===== ADMIN TABLE ===== */
+ max-width:600px;table.admin {
+    margin:auto;
+}
+
+
+table.admin td:nth-child(1) {
+    width:auto;           /* 🔥 mecz ma całą szerokość */
+    text-align:left;
+}
+
+table.admin td:nth-child(2),
+table.admin td:nth-child(3) {
+    width:60px;           /* 🔥 miejsce na inputy */
+    text-align:center;
+}
 
 /* ===== INPUTY (ADMIN) ===== */
 input.score {
@@ -415,7 +431,7 @@ def admin():
         html += f"<td><input class='score' name='g2_{i}' value='{g2}' /></td>"
         html += "</tr>"
 
-    html += "</table>"
+    html += "<table class='admin'>"
     html += "<button>ZAPISZ</button>"
     html += "</form>"
     html += "<br><a href='/'>⬅ Powrót</a>"
