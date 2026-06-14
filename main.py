@@ -167,6 +167,9 @@ body {
     color:#e0e0e0;
     margin:0;
     padding:10px;
+    
+    max-width:900px;   /* 🔥 DODAJ */
+    margin:auto;       /* 🔥 DODAJ */
 }
 
 h2 {
