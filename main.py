@@ -66,9 +66,9 @@ table.ranking tr:nth-child(3) td { color:#c0c0c0; }
 table.ranking tr:nth-child(4) td { color:#cd7f32; }
 
 /* PUNKTY */
-td.p3 { color:#4caf50; font-weight:bold; }
-td.p1 { color:#ffb74d; }
-td.p0 { color:#ef5350; }
+.p3 { color:#4caf50; font-weight:bold; }
+.p1 { color:#ffd54f; }   /* bardziej żółty */
+.p0 { color:#ef5350; }
 
 .match {
     color: #e0e0e0 !important;
