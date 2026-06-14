@@ -235,9 +235,66 @@ def get_flag(country):
 # ===== AUTO WYNIKI (tylko puste!) =====
 API_KEY = "5f796b64739119baa3aa0c5571feecd3"
 last_update = 0
+TEAM_MAP = {
+    "polskaajcaria": "switzerland",    "polska": "poland",
+    "szwecja": "sweden",
+    "turcja": "turkey",
+    "arabiasaudyjska": "saudiarabia",
+    "kanada": "canada",
+    "rpa": "southafrica",
+    "czechy": "czechrepublic",
+    "bośniaihercegowina": "bosniaandherzegovina",
+    "paragwaj": "paraguay",
+    "katar": "qatar",
+    "maroko": "morocco",
+    "haiti": "haiti",
+    "australia": "australia",
+    "curacao": "curaçao",
+    "ekwador": "ecuador",
+    "wybrzeżekościsloniowej": "ivorycoast",
+    "tunezja": "tunisia",
+    "republikazielonegoprzylądka": "capoverde",
+    "belgia": "belgium",
+    "egipt": "egypt",
+    "urugwaj": "uruguay",
+    "iran": "iran",
+    "nowazelandia": "newzealand",
+    "senegal": "senegal",
+    "irak": "iraq",
+    "norwegia": "norway",
+    "algieria": "algeria",
+    "austria": "austria",
+    "jordania": "jordan",
+    "portugalia": "portugal",
+    "drkonga": "drcongo",
+    "chorwacja": "croatia",
+    "ghana": "ghana",
+    "panama": "panama",
+    "uzbekistan": "uzbekistan",
+    "kolumbia": "colombia",
+    "szkocja": "scotland",
+    "anglia": "england"
+    "niemcy": "germany",
+    "francja": "france",
+    "hiszpania": "spain",
+    "usa": "usa",
+    "argentyna": "argentina",
+    "brazylia": "brazil",
+    "holandia": "netherlands",
+    "japonia": "japan",
+    "koreapołudniowa": "southkorea",
+    "meksyk": "mexico",
+}
 
 def normalize(m):
-    return m.replace(" ", "").lower()
+    m = m.replace(" ", "")\
+         .replace("ł","l")\
+         .replace("ś","s")\
+         .replace("ó","o")\
+         .replace("ż","z")\
+         .replace("ź","z")\
+         .lower()
+    return TEAM_MAP.get(m, m)
 
 def get_live_match(mecz):
     try:
