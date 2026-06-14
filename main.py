@@ -19,23 +19,101 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ===== STYLE =====
 STYLE = """
 <style>
-body { font-family: Arial; background:#f5f5f5; margin:0; padding:10px; }
-h2 { text-align:center; }
+body;body {
+    background:#111;
+    color:#eee;
+    margin:0;
+    padding:10px;
+}
 
-table { width:100%; border-collapse:collapse; background:white; }
-th { background:#333; color:white; padding:10px; }
-td { padding:8px; text-align:center; }
+h2 {
+    text-align:center;
+    margin:15px 0;
+}
 
-tr:nth-child(even){ background:#f2f2f2; }
-tr:hover{ background:#ddd; }
+table {
+    width:100%;
+    border-collapse:collapse;
+    background:#1e1e1e;
+    border-radius:12px;
+    overflow:hidden;
+}
 
-a { text-decoration:none; color:#007bff; display:block; }
+th {
+    background:#222;
+    padding:12px;
+    font-size:14px;
+}
 
-img.flag { height:18px; vertical-align:middle; margin-right:5px; }
+td {
+    padding:10px;
+    border-bottom:1px solid #333;
+}
 
+tr:hover {
+    background:#2a2a2a;
+}
+
+a {
+    color:#4da6ff;
+    text-decoration:none;
+    display:block;
+}
+
+/* LEPSZE FLAGI */
+img.flag {
+    height:16px;
+    margin-right:4px;
+}
+
+/* TOP3 */
+tr:nth-child(2) td { font-weight:bold; color:gold; }
+tr:nth-child(3) td { color:silver; }
+tr:nth-child(4) td { color:#cd7f32; }
+
+/* MOBILE */
 @media (max-width:600px){
- table { font-size:12px; }
- td,th { padding:6px; }
+
+    body {
+        padding:5px;
+    }
+
+    h2 {
+        font-size:18px;
+    }
+
+    table {
+        font-size:12px;
+    }
+
+    th {
+        padding:8px;
+    }
+
+    td {
+        padding:6px;
+    }
+
+    /* ZACHOWANIE DLA DŁUGICH NAZW */
+    td {
+        word-break: break-word;
+    }
+
+    /* SCROLL zamiast ścisku */
+    table {
+        display:block;
+        overflow-x:auto;
+    }
+}
+
+/* BUTTON */
+button {
+    background:#4da6ff;
+    color:white;
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    margin-top:10px;
 }
 </style>
 """
