@@ -37,6 +37,10 @@ td {
     padding:10px;
     border-bottom:1px solid #2a2a2a;
 }
+/* ✅ SZEROKOŚCI KOLUMN (ranking) */
+th:nth-child(1), td:nth-child(1) { width:40px; }   /* # */
+th:nth-child(3), td:nth-child(3) { width:50px; }   /* pkt */
+th:nth-child(4), td:nth-child(4) { width:50px; }   /* 🎯 */
 
 /* hover */
 tr:hover {
@@ -74,13 +78,13 @@ img.flag {
     table {
         display:block;
         overflow-x:auto;
-        white-space:nowrap;
         width:100%;
     }
 
     th, td {
         font-size:12px;
         padding:6px;
+        white-space:nowrap;
     }
 }
 
