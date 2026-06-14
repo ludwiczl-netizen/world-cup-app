@@ -285,8 +285,8 @@ async def save(request: Request):
         g1 = form.get(f"g1_{i}")
         g2 = form.get(f"g2_{i}")
 
-       val1 = int(g1) if g1 and g1.isdigit() else None
-       val2 = int(g2) if g2 and g2.isdigit() else None
+        val1 = None if g1=="" else int(g1) if g1 and g1.isdigit() else row["gol1"]
+        val2 = None if g2=="" else int(g2) if g2 and g2.isdigit() else row["gol2"]
 
         supabase.table("wyniki").update({
             "gol1": val1,
