@@ -323,7 +323,9 @@ def player(name: str):
 
         cls = "p3" if pkt==3 else "p1" if pkt==1 else "p0" if pkt==0 else ""
 
-        html += "<div class='card'>"html += "<div class='card'> class='match'><span class='match'>{mecz_html}</span></div>"
+        html += "<div class='card'>"
+        
+        html += f"<div class='match'><span class='match'>{mecz_html}</span></div>"
 
         html += "<div class='row'>"
         html += f"<span>Typ: {typ}</span>"
