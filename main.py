@@ -128,8 +128,6 @@ def home():
         if sheet.strip().lower() in ["wyniki","ranking","instrukcja","typy_zbiorcze"]:
             continue
 
-    try:
-
         df = pd.read_excel(xls, sheet)
         df.columns = df.columns.str.strip()
 
@@ -182,7 +180,6 @@ def home():
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
     return html
-
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
