@@ -86,16 +86,17 @@ img.flag {
         overflow-x:auto;
     }
 }
-/* ===== KARTY ===== *//* ===== KART    display:flex;
-    flex-direction:column;
-    gap:10px;
-}
+/* ===== KARTY ===== */
 
-.card {
+.cards {
+    display:grid;
+    grid-template-columns: .card {    grid-template-columns: 1fr;
     background:#1a1a1a;
     padding:12px;
     border-radius:10px;
     box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    max-width:600px;
+    margin:auto;
 }
 
 /* mecz */
@@ -104,27 +105,54 @@ img.flag {
     margin-bottom:6px;
 }
 
-/* dolny rząd */
+/* ✅ TO CI BRAKUJE */
 .row {
     display:flex;
-    justify-content:space-between;
-    font-size:13px;
+    gap:10px;
+    flex-wrap:wrap;
 }
 
-/* mobile boost */
-@media (max-width:600px){
-    .card {
-        padding:10px;
+/* desktop siatka */
+@media (min-width:800px){
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
     }
+}
 
-    .row {
-        flex-direction:column;
-        gap:4px;
+@media (min-width:1200px){
+    .cards {
+        grid-template-columns: repeat(3, 1fr);
     }
+}
+    gap:12px;
+}
+
+
 }
 
 
 .cards {
+
+/* ===== DESKTOP GRID ===== *//* ===== DESKTOP GRID =====:grid;
+    grid-template-columns: 1fr;
+    gap:12px;
+}
+
+/* desktop */
+@media (min-width:800px){
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width:1200px){
+    .cards {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.cards {
+
 
 </style>
 """
@@ -359,8 +387,8 @@ def admin():
 
         html += "<tr>"
         html += f"<td>{r['mecz']}</td>"
-        html += f"<td><input name='g1_{i}' value='{g1}'></td>"
-        html += f"<td><input name='g2_{i}' value='{g2}'></td>"
+        html += f"<td>{r['mecz']}</td>"html += f"<html += f"<td><input class='score' name='g1_{i}' value='{g1}'></td>"
+        html += f"<td><input class='score' name='g2_{i}' value='{g2}'></td>"
         html += "</tr>"
 
     html += "</table>"
