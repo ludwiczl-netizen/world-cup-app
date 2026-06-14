@@ -116,10 +116,10 @@ def licz_punkty(typ, wynik):
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-try:
-    update_missing_results()
-except:
-    pass
+   try:
+     update_missing_results()
+   except:
+     pass
 
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
