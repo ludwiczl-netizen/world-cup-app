@@ -140,9 +140,6 @@ img.flag {
     padding:4px;
 }
 
-</style>
-"""
-
 .score {
     width:40px;
     padding:4px;    text-align:center;
@@ -152,6 +149,8 @@ img.flag {
     border-radius:6px;
 }
 
+</style>
+"""
 
 /* ===== DESKTOP GRID ===== *//* ===== DESKTOP GRID =====:grid;
     grid-template-columns: 1fr;
