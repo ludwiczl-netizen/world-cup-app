@@ -90,16 +90,24 @@ img.flag {
     height:16px;
 }
 
-/* ===== MOBILE TABELA (ranking/admin) ===== */
+/* ===== MOBILE TABELA ===== */
 @media (max-width:600px){
+
     table {
         width:100%;
     }
 
     th, td {
-        font-size:12px;
-        padding:4px;
+        font-size:15px;
+        padding:6px;
         white-space:nowrap;
+    }
+
+    /* 🔥 ZWĘŻENIE KOLUMNY GRACZ */
+    th:nth-child(2), td:nth-child(2) {
+        max-width:140px;
+        overflow:hidden;
+        text-overflow:ellipsis;
     }
 }
 
