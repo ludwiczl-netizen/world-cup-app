@@ -70,6 +70,10 @@ td.p3 { color:#4caf50; font-weight:bold; }
 td.p1 { color:#ffb74d; }
 td.p0 { color:#ef5350; }
 
+.match {
+    color: #e0e0e0 !important;
+}
+
 img.flag {
     height:16px;
 }
@@ -281,10 +285,10 @@ def player(name: str):
         cls = "p3" if pkt==3 else "p1" if pkt==1 else "p0" if pkt==0 else ""
 
         html += "<tr>"
-        html += f"<td>{mecz_html}</td>"
+        html += f"<td><span class='match'>{mecz_html}</span></td>"
         html += f"<td>{typ}</td>"
-        html += f"<td class='{cls}'>{wynik_txt}</td>"
-        html += f"<td class='{cls}'>{pkt}</td>"
+        html += f"<td><span class='{cls}'>{wynik_txt}</span></td>"
+        html += f"<td><span class='{cls}'>{pkt}</span></td>"
         html += "</tr>"
 
     html += "</table>"
