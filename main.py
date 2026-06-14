@@ -143,11 +143,6 @@ button {
     color:white;
     width:100%;
 }
-
-</style>
-"""
-``
-
 /* ===== PODSTAWA ===== */
 body {
     font-family: Arial;
@@ -159,6 +154,9 @@ body {
 
 h2 {
     text-align:center;
+
+</style>
+"""
 
 
 # ===== FLAGI (działają na Windows) =====
