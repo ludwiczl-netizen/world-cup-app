@@ -418,7 +418,7 @@ def admin():
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>Panel wyników</h2>"
     html += "<form method='post'>"
-    html += "<table>"
+    html += "<table class='admin'>"
 
     for i, r in enumerate(data.data):
 
@@ -431,7 +431,7 @@ def admin():
         html += f"<td><input class='score' name='g2_{i}' value='{g2}' /></td>"
         html += "</tr>"
 
-    html += "<table class='admin'>"
+    html += "</table>"
     html += "<button>ZAPISZ</button>"
     html += "</form>"
     html += "<br><a href='/'>⬅ Powrót</a>"
