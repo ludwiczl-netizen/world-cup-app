@@ -19,9 +19,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ===== STYLE =====
 STYLE = """
 <style>
-body;body {
-    background:#111;
-    color:#eee;
+body0e0e0;body {
     margin:0;
     padding:10px;
 }
@@ -34,8 +32,8 @@ h2 {
 table {
     width:100%;
     border-collapse:collapse;
-    background:#1e1e1e;
-    border-radius:12px;
+    background:#1a1a1a;
+    border-radius:10px;
     overflow:hidden;
 }
 
@@ -43,15 +41,16 @@ th {
     background:#222;
     padding:12px;
     font-size:14px;
+    color:#aaa;
 }
 
 td {
     padding:10px;
-    border-bottom:1px solid #333;
+    border-bottom:1px solid #2a2a2a;
 }
 
 tr:hover {
-    background:#2a2a2a;
+    background:#252525;
 }
 
 a {
@@ -60,49 +59,41 @@ a {
     display:block;
 }
 
-/* LEPSZE FLAGI */
+/* 🔥 TOP 3 — subtelnie */
+tr:nth-child(2) td { font-weight:bold; color:#ffd700; }  /* złoty */
+tr:nth-child(3) td { color:#c0c0c0; }                   /* srebrny */
+tr:nth-child(4) td { color:#cd7f32; }                   /* brąz */
+
+/* ✅ punkty (delikatne) */
+td.p3 { color:#4caf50; font-weight:bold; }   /* zielony */
+td.p1 { color:#ffb74d; }                     /* pomarańczowy */
+td.p0 { color:#ef5350; }                     /* czerwony */
+
+/* FLAGI */
 img.flag {
     height:16px;
     margin-right:4px;
 }
 
-/* TOP3 */
-tr:nth-child(2) td { font-weight:bold; color:gold; }
-tr:nth-child(3) td { color:silver; }
-tr:nth-child(4) td { color:#cd7f32; }
-
 /* MOBILE */
 @media (max-width:600px){
 
-    body {
-        padding:5px;
-    }
+    body { padding:5px; }
 
-    h2 {
-        font-size:18px;
-    }
+    h2 { font-size:18px; }
 
     table {
         font-size:12px;
+        display:block;
+        overflow-x:auto;
     }
 
-    th {
-        padding:8px;
-    }
-
-    td {
+    td, th {
         padding:6px;
     }
 
-    /* ZACHOWANIE DLA DŁUGICH NAZW */
     td {
         word-break: break-word;
-    }
-
-    /* SCROLL zamiast ścisku */
-    table {
-        display:block;
-        overflow-x:auto;
     }
 }
 
@@ -111,12 +102,16 @@ button {
     background:#4da6ff;
     color:white;
     border:none;
-    padding:10px 15px;
+    padding:10px;
     border-radius:8px;
     margin-top:10px;
+    width:100%;
 }
 </style>
 """
+    font-family: Arial;
+    background:#0f0f0f;
+
 
 # ===== FLAGI (działają na Windows) =====
 def get_flag(country):
@@ -250,7 +245,10 @@ def home():
         html += "<tr>"
         html += f"<td>{pos}</td>"
         html += f"<td><a href='/gracz/{safe}'>{r['name']}</a></td>"
-        html += f"<td>{r['pkt']}</td>"
+
+        cls = "p3" if i == 1 else "p1" if i <= 3 else ""
+
+        html += f"<td class='{cls}'>{r['pkt']}</td>"
         html += f"<td>{r['dokladne']}</td>"
         html += "</tr>"
 
@@ -307,13 +305,13 @@ def player(name: str):
             pkt = "-"
             wynik_txt = "-"
 
-        color = "green" if pkt==3 else "orange" if pkt==1 else "red" if pkt==0 else "black"
+        cls = "p3" if pkt==3 else "p1" if pkt==1 else "p0" if pkt==0 else ""
 
         html += "<tr>"
         html += f"<td>{mecz_html}</td>"
         html += f"<td>{typ}</td>"
         html += f"<td>{wynik_txt}</td>"
-        html += f"<td style='color:{color}'>{pkt}</td>"
+        html += f"<td class='{cls}'>{pkt}</td>"
         html += "</tr>"
 
     html += "</table>"
