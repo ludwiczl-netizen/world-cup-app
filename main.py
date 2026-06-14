@@ -114,12 +114,9 @@ def licz_punkty(typ, wynik):
 
 # ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
-def home():
-
-   try:
-     update_missing_results()
-   except:
-     pass
+def        update_missing_results()def home():
+    except:
+        pass
 
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
@@ -130,6 +127,8 @@ def home():
 
         if sheet.strip().lower() in ["wyniki","ranking","instrukcja","typy_zbiorcze"]:
             continue
+
+    try:
 
         df = pd.read_excel(xls, sheet)
         df.columns = df.columns.str.strip()
