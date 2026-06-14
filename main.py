@@ -22,10 +22,13 @@ STYLE = """
 }
 
 /* ===== TABELA (RANKING + ADMIN) ===== */
+
 table {
-    width:100%;
+    width}    width:100%;
     border-collapse:collapse;
-}
+    table-layout: fixed;
+
+
 
 th {
     background:#222;
@@ -41,6 +44,12 @@ td {
 th:nth-child(1), td:nth-child(1) { width:40px; }   /* # */
 th:nth-child(3), td:nth-child(3) { width:50px; }   /* pkt */
 th:nth-child(4), td:nth-child(4) { width:50px; }   /* 🎯 */
+
+th:nth-child(2), td:nth-child(2) {
+    width:auto;
+    text-align:left;
+}
+
 
 /* hover */
 tr:hover {
