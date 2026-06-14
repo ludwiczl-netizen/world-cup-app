@@ -61,9 +61,9 @@ a {
 }
 
 /* TOP 3 */
-tr:nth-child(2) td { color:#ffd700; font-weight:bold; }
-tr:nth-child(3) td { color:#c0c0c0; }
-tr:nth-child(4) td { color:#cd7f32; }
+table.ranking tr:nth-child(2) td { color:#ffd700; font-weight:bold; }
+table.ranking tr:nth-child(3) td { color:#c0c0c0; }
+table.ranking tr:nth-child(4) td { color:#cd7f32; }
 
 /* PUNKTY */
 td.p3 { color:#4caf50; font-weight:bold; }
@@ -210,7 +210,7 @@ def home():
 
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>🏆 Ranking</h2>"
-    html += "<table>"
+    html += "<table class='ranking'>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
     for i, r in enumerate(ranking,1):
