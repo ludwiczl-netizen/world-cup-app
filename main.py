@@ -125,7 +125,7 @@ img.flag {
 }
 
 /* ===== DESKTOP GRID ===== */
-@media (min-width:800px){
+@media (min-width:1400px){
     .cards {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -168,7 +168,7 @@ body {
     margin:0;
     padding:10px;
     
-    max-width:900px;   /* 🔥 DODAJ */
+    max-width:1200px;   /* 🔥 DODAJ */
     margin:auto;       /* 🔥 DODAJ */
 }
 
