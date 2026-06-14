@@ -38,17 +38,22 @@ table {
     background:#1a1a1a;
     border-radius:10px;
     overflow:hidden;
+    table-layout: fixed;
 }
 
 th {
     background:#222;
     padding:12px;
     color:#aaa;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 td {
     padding:10px;
     border-bottom:1px solid #2a2a2a;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 tr:hover {
@@ -140,14 +145,19 @@ img.flag {
     padding:4px;
 }
 
+
 .score {
-    width:40px;
-    padding:4px;    text-align:center;
+    width:32px;            /* było 40 → mniejsze */
+    height:28px;
+    text-align:center;
+    padding:2px;
     background:#111;
     color:white;
     border:1px solid #444;
     border-radius:6px;
+    font-size:14px;
 }
+
 /* ===== DESKTOP GRID ===== *//* =====
 .cards {
     display: grid;
@@ -162,9 +172,16 @@ img.flag {
     }
 }
 
-@media (min-width:1200px){
-    .cards {
-        grid-template-columns: repeat(3, 1fr);
+@media (max-width:600px){
+
+    table {
+        font-size:12px;
+        width:100%;
+    }
+
+    th, td {
+        padding:6px;
+        font-size:12px;
     }
 }
 </style>
