@@ -148,10 +148,6 @@ img.flag {
     border:1px solid #444;
     border-radius:6px;
 }
-
-</style>
-"""
-
 /* ===== DESKTOP GRID ===== *//* =====
 .cards {
     display: grid;
@@ -171,12 +167,10 @@ img.flag {
         grid-template-columns: repeat(3, 1fr);
     }
 }
-
-.cards {
-
-
 </style>
 """
+
+.cards {
 
 
 # ===== FLAGI (działają na Windows) =====
