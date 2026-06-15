@@ -308,9 +308,13 @@ def get_live_match(mecz):
             "x-apisports-key": API_KEY
         }
 
+
+        from datetime import date
+
         params = {
-            "live": "all"
+            "date": date.today().isoformat()
         }
+
 
         res = requests.get(url, headers=headers, params=params)
         data = res.json()
