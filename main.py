@@ -314,7 +314,11 @@ def get_live_match(mecz):
         params = {
             "date": date.today().isoformat()
         }
+    print("🔥 BEFORE REQUEST")
 
+    res = requests.get(url, headers=headers, params=params)
+
+    print("🔥 AFTER REQUEST")
 
         res = requests.get(url, headers=headers, params=params)
         data = res.json()
