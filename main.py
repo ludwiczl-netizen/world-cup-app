@@ -339,8 +339,8 @@ def update_missing_results():
     global last_update
 
     # nie odpytywać API co odświeżenie
-    if time.time() - last_update < 60:
-        return
+    #if time.time() - last_update < 60:
+        #return
 
     last_update = time.time()
 
