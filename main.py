@@ -309,9 +309,12 @@ def get_live_match(mecz):
         }
 
         from datetime import date
+
         params = {
-            "date": date.today().isoformat()
+            "from": "2026-06-13",
+            "to": "2026-06-15"
         }
+
 
         print("🔥 BEFORE REQUEST")
 
