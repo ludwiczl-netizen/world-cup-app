@@ -309,8 +309,7 @@ def get_live_match(mecz):
         }
 
         params = {
-            "from": "2026-06-13",
-            "to": "2026-06-15"
+            "last": 50
         }
 
         print("🔥 BEFORE REQUEST")
