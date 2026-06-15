@@ -296,8 +296,9 @@ def normalize(m):
          .lower()
     return TEAM_MAP.get(m, m)
 
-def get_live_match(mecz):def
-    team1, team2 = mecz.split("-")
+def get_live_match(mecz):
+    try:
+        team1, team2 = mecz.split("-")
         team1 = team1.strip()
         team2 = team2.strip()
 
@@ -307,9 +308,6 @@ def get_live_match(mecz):def
             "x-apisports-key": API_KEY
         }
 
-        from datetime import date
-
-        # ✅ zakres dat (masz dane nawet gdy brak live)
         params = {
             "from": "2026-06-13",
             "to": "2026-06-15"
@@ -334,7 +332,6 @@ def get_live_match(mecz):def
 
         print("✅ RESPONSE COUNT:", len(data["response"]))
 
-        # 🔥 normalizacja drużyn z Twojego meczu
         t1 = normalize(team1)
         t2 = normalize(team2)
 
@@ -348,7 +345,6 @@ def get_live_match(mecz):def
             print(f"🔍 APP: {t1}-{t2}")
             print(f"🔍 API: {home_norm}-{away_norm}")
 
-            # ✅ KLUCZ: dopasowanie w obie strony
             if (
                 (t1 in home_norm and t2 in away_norm) or
                 (t1 in away_norm and t2 in home_norm)
@@ -368,7 +364,6 @@ def get_live_match(mecz):def
     except Exception as e:
         print("❌ ERROR:", e)
         return None
-    try:
 
 
 def update_missing_results():
