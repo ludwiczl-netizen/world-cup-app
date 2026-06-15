@@ -9,7 +9,7 @@ import time
 
 
 # ===== APP =====
-#app = FastAPI()
+app = FastAPI()
 
 # ===== CONFIG =====
 
