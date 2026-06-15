@@ -347,7 +347,7 @@ def update_missing_results():
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     for r in data.data:
-        if r["gol1"] is None and r["gol2"] is None:
+        if True:
 
             wynik = get_live_match(r["mecz"])
 
