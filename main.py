@@ -296,9 +296,7 @@ def normalize(m):
          .lower()
     return TEAM_MAP.get(m, m)
 
-def get_live_match(mecz):
-    try:
-        team1, team2 = mecz.split("-")
+def get_live_match(mecz):def get_live        team1, team2 = mecz.split("-")
         team1 = team1.strip()
         team2 = team2.strip()
 
@@ -310,11 +308,11 @@ def get_live_match(mecz):
 
         from datetime import date
 
+        # ✅ zakres dat (masz dane nawet gdy brak live)
         params = {
             "from": "2026-06-13",
             "to": "2026-06-15"
         }
-
 
         print("🔥 BEFORE REQUEST")
 
@@ -330,29 +328,47 @@ def get_live_match(mecz):
         data = res.json()
 
         if "response" not in data:
-            print("❌ NO RESPONSE FIELD")
+            print("❌ BRAK response")
             return None
 
         print("✅ RESPONSE COUNT:", len(data["response"]))
+
+        # 🔥 normalizacja drużyn z Twojego meczu
+        t1 = normalize(team1)
+        t2 = normalize(team2)
 
         for match in data["response"]:
             home = match["teams"]["home"]["name"]
             away = match["teams"]["away"]["name"]
 
-            if normalize(team1) in normalize(home) and normalize(team2) in normalize(away):
+            home_norm = normalize(home)
+            away_norm = normalize(away)
+
+            print(f"🔍 APP: {t1}-{t2}")
+            print(f"🔍 API: {home_norm}-{away_norm}")
+
+            # ✅ KLUCZ: dopasowanie w obie strony
+            if (
+                (t1 in home_norm and t2 in away_norm) or
+                (t1 in away_norm and t2 in home_norm)
+            ):
 
                 g1 = match["goals"]["home"]
                 g2 = match["goals"]["away"]
 
+                print(f"✅ MATCH FOUND: {team1}-{team2} -> {g1}:{g2}")
+
                 if g1 is not None and g2 is not None:
-                    print(f"✅ MATCH FOUND: {team1}-{team2} -> {g1}:{g2}")
                     return (g1, g2)
 
+        print("❌ BRAK DOPASOWANIA")
         return None
 
     except Exception as e:
         print("❌ ERROR:", e)
         return None
+    try:
+
 
 def update_missing_results():
     global last_update
