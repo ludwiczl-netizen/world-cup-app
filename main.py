@@ -308,9 +308,12 @@ def get_live_match(mecz):
             "x-apisports-key": API_KEY
         }
 
+
         params = {
-            "last": 50
+            "league": 1,
+            "season": 2022
         }
+
 
         print("🔥 BEFORE REQUEST")
 
