@@ -12,10 +12,11 @@ import time
 app = FastAPI()
 
 # ===== CONFIG =====
-
+SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
+SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
-#supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
 STYLE = """
