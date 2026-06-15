@@ -308,23 +308,29 @@ def get_live_match(mecz):
             "x-apisports-key": API_KEY
         }
 
-
         from datetime import date
-
         params = {
             "date": date.today().isoformat()
         }
-    print("🔥 BEFORE REQUEST")
 
-    res = requests.get(url, headers=headers, params=params)
+        print("🔥 BEFORE REQUEST")
 
-    print("🔥 AFTER REQUEST")
+        res = requests.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=5
+        )
 
-        res = requests.get(url, headers=headers, params=params)
+        print("🔥 AFTER REQUEST:", res.status_code)
+
         data = res.json()
 
         if "response" not in data:
+            print("❌ NO RESPONSE FIELD")
             return None
+
+        print("✅ RESPONSE COUNT:", len(data["response"]))
 
         for match in data["response"]:
             home = match["teams"]["home"]["name"]
@@ -336,11 +342,13 @@ def get_live_match(mecz):
                 g2 = match["goals"]["away"]
 
                 if g1 is not None and g2 is not None:
+                    print(f"✅ MATCH FOUND: {team1}-{team2} -> {g1}:{g2}")
                     return (g1, g2)
 
         return None
 
-    except:
+    except Exception as e:
+        print("❌ ERROR:", e)
         return None
 
 def update_missing_results():
