@@ -9,14 +9,13 @@ import time
 
 
 # ===== APP =====
-app = FastAPI()
+#app = FastAPI()
 
 # ===== CONFIG =====
-SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
-SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
+
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+#supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ===== STYLE =====
 STYLE = """
@@ -232,177 +231,6 @@ def get_flag(country):
         return f"<img class='flag' src='https://flagcdn.com/w20/{code}.png'>"
     return ""
 
-# ===== AUTO WYNIKI (tylko puste!) =====
-API_KEY = "5f796b64739119baa3aa0c5571feecd3"
-last_update = 0
-TEAM_MAP = {
-    "polskaajcaria": "switzerland",    "polska": "poland",
-    "szwecja": "sweden",
-    "turcja": "turkey",
-    "arabiasaudyjska": "saudiarabia",
-    "kanada": "canada",
-    "rpa": "southafrica",
-    "czechy": "czechrepublic",
-    "bośniaihercegowina": "bosniaandherzegovina",
-    "paragwaj": "paraguay",
-    "katar": "qatar",
-    "maroko": "morocco",
-    "haiti": "haiti",
-    "australia": "australia",
-    "curacao": "curaçao",
-    "ekwador": "ecuador",
-    "wybrzeżekościsloniowej": "ivorycoast",
-    "tunezja": "tunisia",
-    "republikazielonegoprzylądka": "capoverde",
-    "belgia": "belgium",
-    "egipt": "egypt",
-    "urugwaj": "uruguay",
-    "iran": "iran",
-    "nowazelandia": "newzealand",
-    "senegal": "senegal",
-    "irak": "iraq",
-    "norwegia": "norway",
-    "algieria": "algeria",
-    "austria": "austria",
-    "jordania": "jordan",
-    "portugalia": "portugal",
-    "drkonga": "drcongo",
-    "chorwacja": "croatia",
-    "ghana": "ghana",
-    "panama": "panama",
-    "uzbekistan": "uzbekistan",
-    "kolumbia": "colombia",
-    "szkocja": "scotland",
-    "anglia": "england",
-    "niemcy": "germany",
-    "francja": "france",
-    "hiszpania": "spain",
-    "usa": "usa",
-    "argentyna": "argentina",
-    "brazylia": "brazil",
-    "holandia": "netherlands",
-    "japonia": "japan",
-    "koreapołudniowa": "southkorea",
-    "meksyk": "mexico",
-}
-
-def normalize(m):
-    m = m.replace(" ", "")\
-         .replace("ł","l")\
-         .replace("ś","s")\
-         .replace("ó","o")\
-         .replace("ż","z")\
-         .replace("ź","z")\
-         .lower()
-    return TEAM_MAP.get(m, m)
-
-def get_live_match(mecz):
-    try:
-        team1, team2 = mecz.split("-")
-        team1 = team1.strip()
-        team2 = team2.strip()
-
-        url = "https://v3.football.api-sports.io/fixtures"
-
-        headers = {
-            "x-apisports-key": API_KEY
-        }
-
-
-
-
-        from datetime import date, timedelta
-
-        today = date.today()
-        yesterday = today - timedelta(days=1)
-
-        params = {
-            "from": yesterday.isoformat(),
-            "to": today.isoformat(),
-            "status": "FT"
-        }
-
-
-
-
-        print("🔥 BEFORE REQUEST")
-
-        res = requests.get(
-            url,
-            headers=headers,
-            params=params,
-            timeout=5
-        )
-
-        print("🔥 AFTER REQUEST:", res.status_code)
-
-        data = res.json()
-
-        if "response" not in data:
-            print("❌ BRAK response")
-            return None
-
-        print("✅ RESPONSE COUNT:", len(data["response"]))
-
-        t1 = normalize(team1)
-        t2 = normalize(team2)
-
-        for match in data["response"]:
-            home = match["teams"]["home"]["name"]
-            away = match["teams"]["away"]["name"]
-
-            home_norm = normalize(home)
-            away_norm = normalize(away)
-
-            print(f"🔍 APP: {t1}-{t2}")
-            print(f"🔍 API: {home_norm}-{away_norm}")
-
-            if (
-                (t1 in home_norm and t2 in away_norm) or
-                (t1 in away_norm and t2 in home_norm)
-            ):
-
-                g1 = match["goals"]["home"]
-                g2 = match["goals"]["away"]
-
-                print(f"✅ MATCH FOUND: {team1}-{team2} -> {g1}:{g2}")
-
-                if g1 is not None and g2 is not None:
-                    return (g1, g2)
-
-        print("❌ BRAK DOPASOWANIA")
-        return None
-
-    except Exception as e:
-        print("❌ ERROR:", e)
-        return None
-
-
-def update_missing_results():
-    global last_update
-
-    # nie odpytywać API co odświeżenie
-    #if time.time() - last_update < 60:
-        #return
-
-    last_update = time.time()
-
-    data = supabase.table("wyniki").select("*").order("id").execute()
-
-    for r in data.data:
-        if True:
-
-            wynik = get_live_match(r["mecz"])
-
-            if wynik:
-                print(f"Update: {r['mecz']} -> {wynik}")
-
-                supabase.table("wyniki").update({
-                    "gol1": wynik[0],
-                    "gol2": wynik[1]
-                }).eq("id", r["id"]).execute()
-
-
 # ===== WYNIKI =====
 def get_wyniki():
     data = supabase.table("wyniki").select("*").order("id").execute()
@@ -435,7 +263,7 @@ def licz_punkty(typ, wynik):
 @app.get("/", response_class=HTMLResponse)
 def home():
 
-    update_missing_results()
+    #update_missing_results()
 
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
