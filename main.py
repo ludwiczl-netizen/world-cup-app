@@ -268,7 +268,9 @@ def home():
 
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
-
+    old_data = supabase.table("ranking_history").select("*").execute()
+    old_positions = {r["name"]: r["position"] for r in old_data.data}
+    
     ranking = []
 
     for sheet in xls.sheet_names:
@@ -314,13 +316,24 @@ def home():
 
     for i, r in enumerate(ranking,1):
 
+        old_pos = old_positions.get(r["name"])
+
+        change = ""
+        if old_pos:
+            diff = old_pos - i
+
+            if diff > 0:
+                change = f" <span class='up'>🔼{diff}</span>"
+            elif diff < 0:
+                change = f" <span class='down'>🔽{abs(diff)}</span>"
+                
         safe = urllib.parse.quote(r["name"])
 
         pos = "🥇" if i==1 else "🥈" if i==2 else "🥉" if i==3 else str(i)
 
         html += "<tr>"
         html += f"<td>{pos}</td>"
-        html += f"<td><a href='/gracz/{safe}'>{r['name']}</a></td>"
+        html += f"<td><a href='/gracz/{safe}'>{r['name']}</a>{change}</td>"
 
         cls = "p3" if i == 1 else "p1" if i <= 3 else ""
 
@@ -331,6 +344,14 @@ def home():
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
+    # zapis nowego rankingu
+    supabase.table("ranking_history").delete().neq("name", "").execute()
+
+    for i, r in enumerate(ranking, 1):
+        supabase.table("ranking_history").insert({
+            "name": r["name"],
+            "position": i
+            }).execute()
     return html
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
