@@ -188,12 +188,6 @@ button {
     color:white;
     width:100%;
 }
-
-.live {
-    color:#ff4d4d;
-    font-weight:bold;
-}
-
 /* ===== PODSTAWA ===== */
 body {
     font-family: Arial;
@@ -334,8 +328,7 @@ def get_live_match(mecz):
                 g2 = match["goals"]["away"]
 
                 if g1 is not None and g2 is not None:
-                    status = match["fixture"]["status"]["short"]
-                    return (g1, g2, status)
+                    return (g1, g2)
 
         return None
 
@@ -507,23 +500,13 @@ def player(name: str):
         else:
             mecz_html = mecz
 
-status_badge = ""status_badge is not None:
-    pkt = licz_punkty(typ, wynik)
-    suma += pkt
-    wynik_txt = f"{wynik[0]}:{wynik[1]}"
-
-    live = get_live_match(mecz)
-
-    if live and len(live) == 3:
-        status = live[2]
-
-        # 🔴 tylko LIVE
-        if status in ["1H", "2H"]:
-            status_badge = " <span class='live'>🔴 LIVE</span>"
-
-else:
-    pkt = "-"
-    wynik_txt = "-"
+        if wynik is not None:
+            pkt = licz_punkty(typ, wynik)
+            suma += pkt
+            wynik_txt = f"{wynik[0]}:{wynik[1]}"
+        else:
+            pkt = "-"
+            wynik_txt = "-"
 
         cls = "p3" if pkt==3 else "p1" if pkt==1 else "p0" if pkt==0 else ""
 
@@ -533,7 +516,7 @@ else:
 
         html += "<div class='row'>"
         html += f"<span>Typ: {typ}</span>"
-        html += f"<span class='{cls}'>Wynik: {wynik_txt}{status_badge}</span>"
+        html += f"<span class='{cls}'>Wynik: {wynik_txt}</span>"
         html += f"<span class='{cls}'>Pkt: {pkt}</span>"
         html += "</div>"
 
