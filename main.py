@@ -296,7 +296,8 @@ def normalize(m):
          .lower()
     return TEAM_MAP.get(m, m)
 
-def get_live_match(mecz):def get_live        team1, team2 = mecz.split("-")
+def get_live_match(mecz):def
+    team1, team2 = mecz.split("-")
         team1 = team1.strip()
         team2 = team2.strip()
 
