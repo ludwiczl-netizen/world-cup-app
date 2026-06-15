@@ -309,10 +309,20 @@ def get_live_match(mecz):
         }
 
 
+
+
+        from datetime import date, timedelta
+
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+
         params = {
-            "league": 1,
-            "season": 2022
+            "from": yesterday.isoformat(),
+            "to": today.isoformat(),
+            "status": "FT"
         }
+
+
 
 
         print("🔥 BEFORE REQUEST")
