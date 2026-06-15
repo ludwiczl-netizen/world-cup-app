@@ -107,9 +107,10 @@ img.flag {
 
     /* 🔥 ZWĘŻENIE KOLUMNY GRACZ */
     th:nth-child(2), td:nth-child(2) {
-        max-width:140px;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        max-width:140 white-space:nowrap;    max-width:140px;
+        overflow:visible;
+        #overflow:hidden;
+        #text-overflow:ellipsis;
     }
 }
 
