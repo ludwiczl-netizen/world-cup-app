@@ -508,7 +508,7 @@ async def save(request: Request):
 
 
     # zapis nowego rankingu
-supabase.table("ranking_history").delete().neq("name", "").execute()
+    supabase.table("ranking_history").delete().neq("name", "").execute()
 
     rows = []
     for i, r in enumerate(ranking, 1):
