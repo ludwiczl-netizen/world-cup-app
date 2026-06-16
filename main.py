@@ -557,8 +557,8 @@ async def save(request: Request):
             "position": i
         })
 
-if rows:
-    supabase.table("ranking_history").insert(rows).execute()
+    if rows:
+        supabase.table("ranking_history").insert(rows).execute()
 
 
     
