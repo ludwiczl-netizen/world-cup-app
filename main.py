@@ -280,13 +280,12 @@ def home():
 
     old_data = supabase.table("ranking_history").select("*").execute()
 
+
     old_positions = {}
-    if old_data.data:
-        old_positions = {}
-        if    old_positions = {if old_data.data:
-            norm(r["name"]): r["position"]
-            for r in old_data.data
-        }
+    if    old_positions = {if old_data.data:
+         norm(r["name"]): r["position"]
+        for r in old_data.data
+    }
 
 
 
