@@ -525,40 +525,39 @@ async def save(request: Request):
             "dokladne": dokladne
         })
 
-        # ✅ DOPIERO TU (PO PĘTLI)
+   # ✅ DOPIERO TU (PO PĘTLI)
+    ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
-       ranking.sort(key=lambda x: x["pkt"], reverse=True)
+    # 🔥 pobierz stary ranking (PRZED usunięciem!)
+    old_data = supabase.table("ranking_history").select("*").execute()
 
-        # 🔥 pobierz stary ranking (PRZED usunięciem!)
-        old_data = supabase.table("ranking_history").select("*").execute()
+    # 🔥 przenieś do ranking_history_old
+    if old_data.data:
+        supabase.table("ranking_history_old").delete().neq("name", "").execute()
 
-        # 🔥 przenieś do ranking_history_old
-        if old_data.data:
-            supabase.table("ranking_history_old").delete().neq("name", "").execute()
-
-            old_rows = []
-            for r in old_data.data:
-                old_rows.append({
-                    "name": r["name"],
-                    "position": r["position"]
-                })
-
-            if old_rows:
-                supabase.table("ranking_history_old").insert(old_rows).execute()
-
-        # 🔥 teraz usuń aktualny ranking
-        supabase.table("ranking_history").delete().neq("name", "").execute()
-
-        # 🔥 zapisz nowy ranking
-        rows = []
-        for i, r in enumerate(ranking, 1):
-            rows.append({
-                "name": norm(r["name"]),
-                "position": i
+        old_rows = []
+        for r in old_data.data:
+            old_rows.append({
+                "name": r["name"],
+                "position": r["position"]
             })
 
-        if rows:
-            supabase.table("ranking_history").insert(rows).execute()
+        if old_rows:
+            supabase.table("ranking_history_old").insert(old_rows).execute()
+
+    # 🔥 teraz usuń aktualny ranking
+    supabase.table("ranking_history").delete().neq("name", "").execute()
+
+    # 🔥 zapisz nowy ranking
+    rows = []
+    for i, r in enumerate(ranking, 1):
+        rows.append({
+            "name": norm(r["name"]),
+            "position": i
+        })
+
+    if rows:
+        supabase.table("ranking_history").insert(rows).execute()
 
 
 
