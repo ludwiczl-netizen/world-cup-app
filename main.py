@@ -369,11 +369,15 @@ def home():
 
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
-    # 🔥 sprawdzenie czy ranking się zmienił# 🔥 spraw r in enumerate(ranking, 1):
-    old_pos = old_positions.get(norm(r["name"]))
-    if old_pos is not None and old_pos != i:
-        changed = True
-        break
+    # 🧠 sprawdzenie czy ranking się zmienił
+    changed = False
+
+    for i, r in enumerate(ranking, 1):
+        old_pos = old_positions.get(norm(r["name"]))
+
+        if old_pos is not None and old_pos != i:
+            changed = True
+            break
 
     # 🔥 zapis dopiero po porównaniu
     if changed:
