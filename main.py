@@ -467,6 +467,46 @@ async def save(request: Request):
             "gol1": val1,
             "gol2": val2
         }).eq("id", row["id"]).execute()
+        
+    xls = pd.ExcelFile(FILE)
+    wyniki = get_wyniki()
+    ranking = []
+
+    for sheet in xls.sheet_names:
+        if sheet.strip().lower() in ["wyniki","ranking","instrukcja","typy_zbiorcze"]:
+            continue
+
+        df = pd.read_excel(xls, sheet)
+        df.columns = df.columns.str.strip()
+
+        suma = 0
+        dokladne = 0
+
+        for _, r in df.iterrows():
+            mecz = str(r.get("Mecz","")).strip()
+            typ = str(r.get("Typ","")).strip()
+
+            if not mecz or mecz == "nan":
+                continue
+
+            wynik = wyniki.get(mecz)
+
+            if wynik is not None:
+                pkt = licz_punkty(typ, wynik)
+                suma += pkt
+                if pkt == 3:
+                    dokladne += 1
+
+        ranking.append({
+            "name": sheet,
+            "pkt": suma,
+            "dokladne": dokladne
+        })
+
+    ranking.sort(key=lambda x: x["pkt"], reverse=True)
+
+
+
     # zapis nowego rankingu
 supabase.table("ranking_history").delete().neq("name", "").execute()
 
@@ -481,4 +521,4 @@ if rows:
     supabase.table("ranking_history").insert(rows).execute()
 
     
-    return RedirectResponse("/admin", status_code=303)
+return RedirectResponse("/admin", status_code=303)
