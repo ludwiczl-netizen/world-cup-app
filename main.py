@@ -19,7 +19,7 @@ SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
 FILE = "tabela zbiorcza z rankingiem.xlsx"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
+xls_cached = pd.ExcelFile(FILE)
 # ===== STYLE =====
 STYLE = """
 <style>
@@ -313,7 +313,7 @@ def home():
 
     #update_missing_results()
 
-    xls = pd.ExcelFile(FILE)
+    xls = xls_cached
     wyniki = get_wyniki()
 
     old_data = supabase.table("ranking_history_old").select("*").execute()
@@ -417,7 +417,7 @@ def player(name: str):
 
     name = urllib.parse.unquote(name)
 
-    xls = pd.ExcelFile(FILE)
+    xls = xls_cached
     if name not in xls.sheet_names:
         return "Brak danych"
 
@@ -528,7 +528,7 @@ async def save(request: Request):
             "gol2": val2
         }).eq("id", row["id"]).execute()
         
-    xls = pd.ExcelFile(FILE)
+    xls = xls_cached
     wyniki = get_wyniki()
     ranking = []
 
