@@ -117,6 +117,15 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
 }
     margin-left:5p
 
+.row-up {
+    animation: flashUp 0.6s ease;
+}
+
+@keyframes flashUp {
+    0% { background: rgba(76,175,80,0.4); }
+    100% { background: rgba(76,175,80,0.08); }
+}
+
 
 
 /* ===== MECZ ===== */
