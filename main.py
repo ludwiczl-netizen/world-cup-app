@@ -340,7 +340,7 @@ def home():
 
         change = ""
 
-        if old_pos:
+        if old_pos is not None:
             diff = old_pos - i
 
             if diff > 0:
@@ -389,7 +389,6 @@ def home():
         else:
             change = " <span class='same'>🆕</span>"
 
-    supabase.table("ranking_history").delete().neq("name", "").execute()
     
     return html
 
@@ -544,19 +543,23 @@ async def save(request: Request):
             "pkt": suma,
             "dokladne": dokladne
         })
-        supabase.table("ranking_history").delete().neq("name", "").execute()
 
-        rows = []
-        for i, r in enumerate(ranking, 1):
+    # ✅ DOPIERO TU (PO PĘTLI)
 
-            rows.append({
-                "name": norm(r["name"]),
-                "position": i
-            })
+    ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
+    supabase.table("ranking_history").delete().neq("name", "").execute()
 
-        if rows:
-            supabase.table("ranking_history").insert(rows).execute()
+    rows = []
+    for i, r in enumerate(ranking, 1):
+        rows.append({
+            "name": norm(r["name"]),
+            "position": i
+        })
+
+if rows:
+    supabase.table("ranking_history").insert(rows).execute()
+
 
     
     return RedirectResponse("/admin", status_code=303)
