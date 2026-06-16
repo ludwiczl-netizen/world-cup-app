@@ -363,6 +363,20 @@ def home():
 
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
+    # zapis NOWEGO rankingu (po wyświetleniu)
+    supabase.table("ranking_history").delete().neq("name", "").execute()
+
+    rows = []
+    for i, r in enumerate(ranking, 1):
+        rows.append({
+            "name": r["name"],
+            "position": i
+        })
+
+    if rows:
+        supabase.table("ranking_history").insert(rows).execute()
+
+    
     return html
 
 # ===== GRACZ =====
@@ -518,21 +532,6 @@ async def save(request: Request):
         })
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
-
-
-
-    # zapis nowego rankingu
-    supabase.table("ranking_history").delete().neq("name", "").execute()
-
-    rows = []
-    for i, r in enumerate(ranking, 1):
-        rows.append({
-            "name": r["name"],
-            "position": i
-        })
-
-    if rows:
-        supabase.table("ranking_history").insert(rows).execute()
 
     
     return RedirectResponse("/admin", status_code=303)
