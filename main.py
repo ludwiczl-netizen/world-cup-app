@@ -86,10 +86,7 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
     display:inline-block;
     margin-left:4px;
 }
-.same {
-    color:#aaa;
-    margin-left:4px;
-}
+
 
 /* ===== MECZ ===== */
 .match {
