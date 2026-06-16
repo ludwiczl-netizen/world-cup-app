@@ -87,32 +87,36 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
 .p3 { color:#4caf50; font-weight:bold; }
 .p1 { color:#ffd54f; }
 .p0 { color:#ef5350; }
+
 .up {
-    color:#4caf50;
-    margin-left:5px;
-    animation: fadeUp 0.4s ease;
+    color    animation: popUp 0.4s ease;    color:#4caf50;
 }
 
 .down {
     color:#ef5350;
     margin-left:5px;
-    animation: fadeDown 0.4s ease;
+    animation: popDown 0.4s ease;
 }
+
 
 .same {
     color:#aaa;
     margin-left:5px;
 }
 
-@keyframes fadeUp {
-    0% { opacity:0; transform:translateY(6px); }
-    100% { opacity:1; transform:translateY(0); }
+
+@keyframes popUp {
+    0% { opacity:0; transform:scale(0.6); }
+    100% { opacity:1; transform:scale(1); }
 }
 
-@keyframes fadeDown {
-    0% { opacity:0; transform:translateY(-6px); }
-    100% { opacity:1; transform:translateY(0); }
+
+@keyframes popDown {
+    0% { opacity:0; transform:scale(0.6); }
+    100% { opacity:1; transform:scale(1); }
 }
+    margin-left:5p
+
 
 
 /* ===== MECZ ===== */
