@@ -369,25 +369,29 @@ def home():
 
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
-    # sprawdź czy ranking się zmienił
+    # 🔥 sprawdzenie czy ranking się zmienił# 🔥 spraw r in enumerate(ranking, 1):
+    old_pos = old_positions.get(norm(r["name"]))
+    if old_pos is not None and old_pos != i:
+        changed = True
+        break
+
+    # 🔥 zapis dopiero po porównaniu
+    if changed:
+        supabase.table("ranking_history").delete().neq("name", "").execute()
+
+        rows = []
+        for i, r in enumerate(ranking, 1):
+            rows.append({
+                "name": norm(r["name"]),
+                "position": i
+            })
+
+        if rows:
+            supabase.table("ranking_history").insert(rows).execute()
+
     changed = False
 
-    for i, r in enumerate(ranking, 1):
-        old_pos = old_positions.get(norm(r["name"]))
 
-        change = ""
-
-        if old_pos is not None:
-            diff = old_pos - i
-
-            if diff > 0:
-                change = f" <span class='up'>🔼{diff}</span>"
-            elif diff < 0:
-                change = f" <span class='down'>🔽{abs(diff)}</span>"
-            else:
-                change = " <span class='same'>➖</span>"
-        else:
-            change = " <span class='same'>🆕</span>"
 
     
     return html
@@ -547,18 +551,6 @@ async def save(request: Request):
     # ✅ DOPIERO TU (PO PĘTLI)
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
-
-    supabase.table("ranking_history").delete().neq("name", "").execute()
-
-    rows = []
-    for i, r in enumerate(ranking, 1):
-        rows.append({
-            "name": norm(r["name"]),
-            "position": i
-        })
-
-    if rows:
-        supabase.table("ranking_history").insert(rows).execute()
 
 
     
