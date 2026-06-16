@@ -356,7 +356,7 @@ def home():
 
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
-
+    return html
 
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
