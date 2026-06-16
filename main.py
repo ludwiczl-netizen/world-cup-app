@@ -7,6 +7,8 @@ import urllib.parse
 import requests
 import time
 
+def norm(name):
+    return name.strip().lower()
 
 # ===== APP =====
 app = FastAPI()
@@ -280,10 +282,12 @@ def home():
 
     old_positions = {}
     if old_data.data:
-        old_positions = {
-    r["name"].strip().lower(): r["position"]
-    for r in old_data.data
-}
+        old_positions = {}
+        if    old_positions = {if old_data.data:
+            norm(r["name"]): r["position"]
+            for r in old_data.data
+        }
+
 
 
     ranking = []
@@ -368,7 +372,7 @@ def home():
     changed = False
 
     for i, r in enumerate(ranking, 1):
-        old_pos = old_positions.get(r["name"])
+        old_pos = old_positions.get(norm(r["name"]))
 
         change = ""
 
@@ -384,7 +388,7 @@ def home():
         else:
             change = " <span class='same'>🆕</span>"
 
-
+    supabase.table("ranking_history").delete().neq("name", "").execute()
     
     return html
 
@@ -543,10 +547,12 @@ async def save(request: Request):
 
         rows = []
         for i, r in enumerate(ranking, 1):
+
             rows.append({
-                "name": r["name"],
+                "name": norm(r["name"]),
                 "position": i
             })
+
 
         if rows:
             supabase.table("ranking_history").insert(rows).execute()
