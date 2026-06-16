@@ -83,11 +83,42 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
 .p3 { color:#4caf50; font-weight:bold; }
 .p1 { color:#ffd54f; }
 .p0 { color:#ef5350; }
-.up,
-.down {
-    display:inline-block;
-    margin-left:4px;
+.up {
+    coloraaa;    color: #4caf50;
 }
+
+/* 🔥 animacje */
+@keyframes slideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+    animation: slideUp 0.4s ease;
+}
+
+.down {
+    color: #ef5350;
+    animation: slideDown 0.4s ease;
+}
+
+.same {
+
 
 
 /* ===== MECZ ===== */
@@ -234,7 +265,7 @@ def get_flag(country):
         "Norwegia":"no","Algieria":"dz","Austria":"at",
         "Jordania":"jo","Portugalia":"pt","DR Konga":"cd",
         "Chorwacja":"hr","Ghana":"gh","Panama":"pa",
-        "Uzbekistan":"uz","Kolumbia":"co"
+        "Uzbekistan":"uz","Kolumbia":"co","Anglia": "gb-eng","Szkocja": "gb-sct"
     }
     code = codes.get(country)
     if code:
