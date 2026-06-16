@@ -363,7 +363,28 @@ def home():
 
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
+    # sprawdź czy ranking się zmienił
+    changed = False
 
+    for i, r in enumerate(ranking, 1):
+        old_pos = old_positions.get(r["name"])
+        if old_pos and old_pos != i:
+            changed = True
+            break
+
+    # zapis tylko jeśli była zmiana
+    if changed:
+        supabase.table("ranking_history").delete().neq("name", "").execute()
+
+        rows = []
+        for i, r in enumerate(ranking, 1):
+            rows.append({
+                "name": r["name"],
+                "position": i
+            })
+
+        if rows:
+            supabase.table("ranking_history").insert(rows).execute()
 
     
     return html
@@ -519,20 +540,6 @@ async def save(request: Request):
             "pkt": suma,
             "dokladne": dokladne
         })
-        # zapis rankingu po zmianie wyników
-        supabase.table("ranking_history").delete().neq("name", "").execute()
-
-        rows = []
-        for i, r in enumerate(ranking, 1):
-            rows.append({
-                "name": r["name"],
-                "position": i
-            })
-
-        if rows:
-            supabase.table("ranking_history").insert(rows).execute()
-
-            ranking.sort(key=lambda x: x["pkt"], reverse=True)
 
     
     return RedirectResponse("/admin", status_code=303)
