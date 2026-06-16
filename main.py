@@ -278,7 +278,7 @@ def home():
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
 
-    old_data = supabase.table("ranking_history").select("*").execute()
+    old_data = supabase.table("ranking_history_old").select("*").execute()
 
 
     old_positions = {}
@@ -528,7 +528,18 @@ async def save(request: Request):
     # ✅ DOPIERO TU (PO PĘTLI)
 
     ranking.sort(key=lambda x: x["pkt"], reverse=True)
+
+    # 🔥 SKOPIUJ stary ranking jako "poprzedni"
+    old_data = supabase.table("ranking_history").select("*").execute()
+
+    if old_data.data:
+        supabase.table("ranking_history_old").delete().neq("name", "").execute()
+        supabase.table("ranking_history_old").insert(old_data.data).execute()
+
+    # 🔥 TERAZ dopiero czyść aktualny
     supabase.table("ranking_history").delete().neq("name", "").execute()
+
+
 
     rows = []
     for i, r in enumerate(ranking, 1):
