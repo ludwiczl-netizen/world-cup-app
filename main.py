@@ -23,7 +23,11 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ===== STYLE =====
 STYLE = """
 <style>
+
+body {
+    font-family: Arial, "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
+
 
 /* ===== TABELA (RANKING + ADMIN) ===== */
 
@@ -84,41 +88,31 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
 .p1 { color:#ffd54f; }
 .p0 { color:#ef5350; }
 .up {
-    coloraaa;    color: #4caf50;
-}
-
-/* 🔥 animacje */
-@keyframes slideUp {
-    0% {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideDown {
-    0% {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-    animation: slideUp 0.4s ease;
+    color:#4caf50;
+    margin-left:5px;
+    animation: fadeUp 0.4s ease;
 }
 
 .down {
-    color: #ef5350;
-    animation: slideDown 0.4s ease;
+    color:#ef5350;
+    margin-left:5px;
+    animation: fadeDown 0.4s ease;
 }
 
 .same {
+    color:#aaa;
+    margin-left:5px;
+}
 
+@keyframes fadeUp {
+    0% { opacity:0; transform:translateY(6px); }
+    100% { opacity:1; transform:translateY(0); }
+}
+
+@keyframes fadeDown {
+    0% { opacity:0; transform:translateY(-6px); }
+    100% { opacity:1; transform:translateY(0); }
+}
 
 
 /* ===== MECZ ===== */
