@@ -86,6 +86,10 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
     display:inline-block;
     margin-left:4px;
 }
+.same {
+    color:#aaa;
+    margin-left:4px;
+}
 
 /* ===== MECZ ===== */
 .match {
@@ -333,12 +337,14 @@ def home():
 
         change = ""
         if old_pos:
-            diff = old_pos - i
+        (diff)}</span>"    diff = old_pos - i
+            else:
+                change = " <span class='same'>➖</span>"
 
             if diff > 0:
                 change = f" <span class='up'>🔼{diff}</span>"
             elif diff < 0:
-                change = f" <span class='down'>🔽{abs(diff)}</span>"
+
                 
         safe = urllib.parse.quote(r["name"])
 
