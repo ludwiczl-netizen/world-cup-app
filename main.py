@@ -382,6 +382,18 @@ def home():
                 change = " <span class='same'>➖</span>"
         else:
             change = " <span class='same'>🆕</span>"
+            # 🔥 RESET ranking_history (TYMCZASOWO – tylko raz!)
+            supabase.table("ranking_history").delete().neq("name", "").execute()
+
+            rows = []
+            for i, r in enumerate(ranking, 1):
+                rows.append({
+                    "name": r["name"],
+                    "position": i
+                })
+
+            if rows:
+                supabase.table("ranking_history").insert(rows).execute()
 
     
     return html
