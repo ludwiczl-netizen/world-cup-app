@@ -336,14 +336,18 @@ def home():
         old_pos = old_positions.get(r["name"])
 
         change = ""
+
         if old_pos:
-        (diff)}</span>"    diff = old_pos - i
-            else:
-                change = " <span class='same'>➖</span>"
+            diff = old_pos - i
 
             if diff > 0:
                 change = f" <span class='up'>🔼{diff}</span>"
             elif diff < 0:
+                change = f" <span class='down'>🔽{abs(diff)}</span>"
+            else:
+                change = " <span class='same'>➖</span>"
+
+
 
                 
         safe = urllib.parse.quote(r["name"])
