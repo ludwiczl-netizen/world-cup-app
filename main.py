@@ -81,6 +81,11 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
 .p3 { color:#4caf50; font-weight:bold; }
 .p1 { color:#ffd54f; }
 .p0 { color:#ef5350; }
+.up,
+.down {
+    display:inline-block;
+    margin-left:4px;
+}
 
 /* ===== MECZ ===== */
 .match {
