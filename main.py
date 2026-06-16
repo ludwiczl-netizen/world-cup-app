@@ -368,9 +368,20 @@ def home():
 
     for i, r in enumerate(ranking, 1):
         old_pos = old_positions.get(r["name"])
-        if old_pos and old_pos != i:
-            changed = True
-            break
+
+        change = ""
+
+        if old_pos is not None:
+            diff = old_pos - i
+
+            if diff > 0:
+                change = f" <span class='up'>🔼{diff}</span>"
+            elif diff < 0:
+                change = f" <span class='down'>🔽{abs(diff)}</span>"
+            else:
+                change = " <span class='same'>➖</span>"
+        else:
+            change = " <span class='same'>🆕</span>"
 
     
     return html
