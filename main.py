@@ -274,8 +274,15 @@ def home():
 
     xls = pd.ExcelFile(FILE)
     wyniki = get_wyniki()
+
     old_data = supabase.table("ranking_history").select("*").execute()
-    old_positions = {r["name"]: r["position"] for r in old_data.data}
+
+    old_positions = {}
+    if old_data.data:
+        old_positions = {
+            r["name"]: r["position"]
+            for r in old_data.data
+        }
     
     ranking = []
 
