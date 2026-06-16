@@ -468,13 +468,17 @@ async def save(request: Request):
             "gol2": val2
         }).eq("id", row["id"]).execute()
     # zapis nowego rankingu
-   # supabase.table("ranking_history").delete().neq("name", "").execute()
+supabase.table("ranking_history").delete().neq("name", "").execute()
 
-    for i, r in enumerate(ranking, 1):
-       # supabase.table("ranking_history").insert({
-            "name": r["name"],
-            "position": i
-            }).execute()
-    return html
+rows = []
+for i, r in enumerate(ranking, 1):
+    rows.append({
+        "name": r["name"],
+        "position": i
+    })
+
+if rows:
+    supabase.table("ranking_history").insert(rows).execute()
+
     
     return RedirectResponse("/admin", status_code=303)
