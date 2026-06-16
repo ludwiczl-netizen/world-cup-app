@@ -281,10 +281,11 @@ def home():
     old_positions = {}
     if old_data.data:
         old_positions = {
-            r["name"]: r["position"]
-            for r in old_data.data
-        }
-    
+    r["name"].strip().lower(): r["position"]
+    for r in old_data.data
+}
+
+
     ranking = []
 
     for sheet in xls.sheet_names:
@@ -330,7 +331,7 @@ def home():
 
     for i, r in enumerate(ranking,1):
 
-        old_pos = old_positions.get(r["name"])
+        old_pos = old_positions.get(r["name"].strip().lower())
 
         change = ""
 
