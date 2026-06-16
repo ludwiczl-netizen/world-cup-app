@@ -350,15 +350,7 @@ def home():
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
 
-    # zapis nowego rankingu
-    supabase.table("ranking_history").delete().neq("name", "").execute()
 
-    for i, r in enumerate(ranking, 1):
-        supabase.table("ranking_history").insert({
-            "name": r["name"],
-            "position": i
-            }).execute()
-    return html
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
 def player(name: str):
@@ -475,5 +467,14 @@ async def save(request: Request):
             "gol1": val1,
             "gol2": val2
         }).eq("id", row["id"]).execute()
+    # zapis nowego rankingu
+   # supabase.table("ranking_history").delete().neq("name", "").execute()
 
+    for i, r in enumerate(ranking, 1):
+       # supabase.table("ranking_history").insert({
+            "name": r["name"],
+            "position": i
+            }).execute()
+    return html
+    
     return RedirectResponse("/admin", status_code=303)
