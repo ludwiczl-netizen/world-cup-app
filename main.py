@@ -528,7 +528,7 @@ def home():
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>🏆 Ranking</h2>"
     html += "<div class='table-wrap'>"
-    html += "<table class='ranking'>"
+    html += "<table id='ranking-table' class='ranking'>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
 
     for i, r in enumerate(ranking,1):
@@ -566,9 +566,135 @@ def home():
 
     html += "</table></div>"
     html += "<br><a href='/admin'>⚙️ Panel admin</a>"
+    html += """
+<script>
+
+async function refreshRanking() {
+
+    try {
+        const res = await fetch('/ranking-data');
+        const data = await res.json();
+
+        let table = document.getElementById("ranking-table");
+
+        let html = "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>";
+
+        data.forEach(r => {
+
+            let change = "";
+
+            if (r.diff > 0) {
+                change = " <span class='up'>🔼" + r.diff + "</span>";
+            } else if (r.diff < 0) {
+                change = " <span class='down'>🔽" + Math.abs(r.diff) + "</span>";
+            } else {
+                change = " <span class='same'>➖</span>";
+            }
+
+            let pos = r.position == 1 ? "🥇" :
+                      r.position == 2 ? "🥈" :
+                      r.position == 3 ? "🥉" :
+                      r.position;
+
+            html += `
+                <tr>
+                    <td>${pos}</td>
+                    <td>${r.name}${change}</td>
+                    <td>${r.pkt}</td>
+                    <td>${r.dokladne}</td>
+                </tr>
+            `;
+        });
+
+        table.innerHTML = html;
+
+    } catch(e) {
+        console.log("refresh error", e);
+    }
+}
+
+// 🔁 co 15 sekund
+setInterval(refreshRanking, 15000);
+
+</script>
+"""
 
     
     return html
+    
+from fastapi.responses import JSONResponse
+
+@app.get("/ranking-data")
+def ranking_data():
+
+    xls = xls_cached
+    wyniki = get_wyniki()
+
+    old_data = supabase.table("ranking_history_old").select("*").execute()
+
+    old_positions = {}
+    if old_data.data:
+        old_positions = {
+            norm(r["name"]): r["position"]
+            for r in old_data.data
+        }
+
+    ranking = []
+
+    for sheet in xls.sheet_names:
+
+        if sheet.strip().lower() in ["wyniki","ranking","instrukcja","typy_zbiorcze"]:
+            continue
+
+        df = pd.read_excel(xls, sheet)
+        df.columns = df.columns.str.strip()
+
+        suma = 0
+        dokladne = 0
+
+        for _, r in df.iterrows():
+            mecz = str(r.get("Mecz","")).strip()
+            typ = str(r.get("Typ","")).strip()
+
+            if not mecz or mecz == "nan":
+                continue
+
+            wynik = wyniki.get(mecz)
+
+            if wynik is not None:
+                pkt = licz_punkty(typ, wynik)
+                suma += pkt
+                if pkt == 3:
+                    dokladne += 1
+
+        ranking.append({
+            "name": sheet,
+            "pkt": suma,
+            "dokladne": dokladne
+        })
+
+    ranking.sort(key=lambda x: x["pkt"], reverse=True)
+
+    out = []
+
+    for i, r in enumerate(ranking, 1):
+
+        old_pos = old_positions.get(norm(r["name"]))
+        diff = 0
+
+        if old_pos is not None:
+            diff = old_pos - i
+
+        out.append({
+            "position": i,
+            "name": r["name"],
+            "pkt": r["pkt"],
+            "dokladne": r["dokladne"],
+            "diff": diff
+        })
+
+    return JSONResponse(out)
+
 
 # ===== GRACZ =====
 @app.get("/gracz/{name}", response_class=HTMLResponse)
