@@ -424,8 +424,13 @@ def fetch_matches_from_api():
                 continue
 
             matches[key] = (score1, score2)
+        print("=== API MATCHES ===")
+        for k, v in matches.items():
+        print(k, v)
 
+        
         return matches
+
 
     except Exception as e:
         print("API error:", e)
