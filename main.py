@@ -463,7 +463,7 @@ def get_api_cached():
 
     return API_CACHE
 def is_empty(v):
-    return v is None or str(v).strip() == ""
+    return v is None
 
 def update_results_from_api():
     api = get_api_cached()
@@ -474,7 +474,7 @@ def update_results_from_api():
         key = normalize_match_name(mecz)
 
         # ✅ tylko gdy BRAK wyniku ręcznego
-        if is_empty(row["gol1"]) and is_empty(row["gol2"]) and row.get("source") != "manual":
+        if is_empty(row["gol1"]) and is_empty(row["gol2"]) and (row.get("source") or "manual") != "manual":
 
             if key in api:
                 g1 = api[key]["g1"]
@@ -772,22 +772,27 @@ def player(name: str):
             pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
             suma += pkt
             if wynik:
+                
                 g1 = wynik["g1"]
                 g2 = wynik["g2"]
 
                 wynik_txt = f"{g1}:{g2}"
-
                 badges = ""
 
                 if wynik.get("status") == "IN_PLAY":
                     badges += " 🔴LIVE"
 
-                if wynik.get("source") == "auto":
+                source = wynik.get("source")
+
+                if source == "auto":
                     badges += " ✅AUTO"
-                elif wynik.get("source") == "manual":
+                elif source == "manual":
                     badges += " ✍️"
+                else:
+                    badges += " ⚪"
 
                 wynik_txt += badges
+
             else:
                 wynik_txt = "-"
         else:
@@ -878,10 +883,16 @@ async def save(request: Request):
         val1 = None if g1=="" else int(g1) if g1 and g1.isdigit() else row["gol1"]
         val2 = None if g2=="" else int(g2) if g2 and g2.isdigit() else row["gol2"]
 
+        
+        new_source = "manual"
+
+        if val1 is None and val2 is None:
+            new_source = "manual"  # 💥 wymuszenie blokady API
+
         supabase.table("wyniki").update({
             "gol1": val1,
             "gol2": val2,
-            "source": "manual"
+            "source": new_source
         }).eq("id", row["id"]).execute()
         
     xls = xls_cached
@@ -958,12 +969,16 @@ async def save(request: Request):
     
     return RedirectResponse("/admin?sync=ok", status_code=303)
 
+from fastapi import Request
+
 @app.post("/sync")
-def sync_api():
+async def sync_api(request: Request):
     try:
         update_results_from_api()
+        print("SYNC CLICKED ✅")
         return RedirectResponse("/admin?sync=ok", status_code=303)
     except Exception as e:
+        print("SYNC ERROR ❌", e)
         return f"Błąd sync: {e}"
 
 import asyncio
