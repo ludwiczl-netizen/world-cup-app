@@ -469,6 +469,8 @@ def home():
 
     xls = xls_cached
     wyniki = get_wyniki()
+
+    html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     from datetime import datetime
 
     html += f"<p style='text-align:center;color:#888;'>last update: {datetime.now().strftime('%H:%M:%S')}</p>"
