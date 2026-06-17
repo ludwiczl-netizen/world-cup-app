@@ -426,7 +426,7 @@ def fetch_matches_from_api():
             matches[key] = (score1, score2)
         print("=== API MATCHES ===")
         for k, v in matches.items():
-        print(k, v)
+            print(k, v)
 
         
         return matches
