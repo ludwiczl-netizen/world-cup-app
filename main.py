@@ -6,7 +6,21 @@ import pandas as pd
 import urllib.parse
 import requests
 import time
-from fastapi_utils.tasks import repeat_every
+import asyncio
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(background_task())
+
+async def background_task():
+    while True:
+        try:
+            update_results_from_api()
+            print("✅ AUTO UPDATE DONE")
+        except Exception as e:
+            print("❌ AUTO UPDATE ERROR:", e)
+
+        await asyncio.sleep(300)  # co 5 min
 
 # ===== API CONFIG =====
 FOOTBALL_API_KEY = "3c4dc87b557f4040b3bb921f1ecd83c7"
@@ -749,7 +763,4 @@ async def save(request: Request):
 
     
     return RedirectResponse("/admin", status_code=303)
-@app.on_event("startup")
-@repeat_every(seconds=300)
-def auto_update_results_task():
-    update_results_from_api()
+
