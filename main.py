@@ -182,7 +182,6 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
     0% { opacity:0; transform:scale(0.6); }
     100% { opacity:1; transform:scale(1); }
 }
-    margin-left:5p
 
 .row-up {
     animation: flashUp 0.6s ease;
@@ -360,8 +359,31 @@ def get_wyniki():
 
         # ✅ ręczne dane mają priorytet
         if r["gol1"] is not None and r["gol2"] is not None:
-            out[mecz] = (r["gol1"], r["gol2"])
-         
+
+            
+            if r.get("source") == "manual":
+                status = None
+            elif key in api:
+                status = api[key]["status"]
+            else:
+                status = None
+
+
+            out[mecz] = {
+                "g1": r["gol1"],
+                "g2": r["gol2"],
+                "source": r.get("source", "manual"),
+                "status": status
+            }
+      
+        elif key in api:
+            out[mecz] = {
+                "g1": api[key]["g1"],
+                "g2": api[key]["g2"],
+                "source": "auto",
+                "status": api[key]["status"]
+            }
+   
 
         else:
             out[mecz] = None
@@ -395,8 +417,6 @@ def fetch_matches_from_api():
         matches = {}
 
         for m in data.get("matches", []):
-            if m["status"] != "FINISHED":
-                continue
 
             home_en = m["homeTeam"]["name"]
             away_en = m["awayTeam"]["name"]
@@ -406,19 +426,33 @@ def fetch_matches_from_api():
 
             key = normalize_match_name(f"{home} - {away}")
 
-            score1 = m["score"]["fullTime"]["home"]
-            score2 = m["score"]["fullTime"]["away"]
+            status = m["status"]
 
-            if score1 is None or score2 is None:
+            g1 = m["score"]["fullTime"]["home"]
+            g2 = m["score"]["fullTime"]["away"]
+
+            # LIVE → użyj partial score
+            if status == "IN_PLAY":
+                half = m["score"].get("halfTime") or {}
+                full = m["score"].get("fullTime") or {}
+
+                g1 = half.get("home") if half.get("home") is not None else full.get("home")
+                g2 = half.get("away") if half.get("away") is not None else full.get("away")
+
+
+            if g1 is None or g2 is None:
                 continue
 
-            matches[key] = (score1, score2)
+            matches[key] = {
+                "g1": g1,
+                "g2": g2,
+                "status": status  # 🔥 LIVE info
+            }
 
         return matches
 
     except Exception as e:
         print("API error:", e)
-        print(f"API matches loaded: {len(matches)}")
         return {}
 
 def get_api_cached():
@@ -444,13 +478,15 @@ def update_results_from_api():
         if is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
             if key in api:
-                g1, g2 = api[key]
+                g1 = api[key]["g1"]
+                g2 = api[key]["g2"]
 
                 print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
 
                 supabase.table("wyniki").update({
                     "gol1": g1,
-                    "gol2": g2
+                    "gol2": g2,
+                    "source": "auto"
                 }).eq("id", row["id"])\
                  .execute()
 
@@ -509,7 +545,7 @@ def home():
             wynik = wyniki.get(mecz)
 
             if wynik is not None:
-                pkt = licz_punkty(typ, wynik)
+                pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
                 suma += pkt
                 if pkt == 3:
                     dokladne += 1
@@ -596,7 +632,7 @@ async function refreshRanking() {
             html += `
                 <tr>
                     <td>${pos}</td>
-                    <td>${r.name}${change}</td>
+                    <td><a href="/gracz/${encodeURIComponent(r.name)}">${r.name}</a>${change}</td>
                     <td>${r.pkt}</td>
                     <td>${r.dokladne}</td>
                 </tr>
@@ -659,7 +695,7 @@ def ranking_data():
             wynik = wyniki.get(mecz)
 
             if wynik is not None:
-                pkt = licz_punkty(typ, wynik)
+                pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
                 suma += pkt
                 if pkt == 3:
                     dokladne += 1
@@ -734,9 +770,27 @@ def player(name: str):
             mecz_html = mecz
 
         if wynik is not None:
-            pkt = licz_punkty(typ, wynik)
+            pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
             suma += pkt
-            wynik_txt = f"{wynik[0]}:{wynik[1]}"
+            if wynik:
+                g1 = wynik["g1"]
+                g2 = wynik["g2"]
+
+                wynik_txt = f"{g1}:{g2}"
+
+                badges = ""
+
+                if wynik.get("status") == "IN_PLAY":
+                    badges += " 🔴LIVE"
+
+                if wynik.get("source") == "auto":
+                    badges += " ✅AUTO"
+                else:
+                    badges += " ✍️"
+
+                wynik_txt += badges
+            else:
+                wynik_txt = "-"
         else:
             pkt = "-"
             wynik_txt = "-"
@@ -827,7 +881,8 @@ async def save(request: Request):
 
         supabase.table("wyniki").update({
             "gol1": val1,
-            "gol2": val2
+            "gol2": val2,
+            "source": "manual"
         }).eq("id", row["id"]).execute()
         
     xls = xls_cached
@@ -854,7 +909,7 @@ async def save(request: Request):
             wynik = wyniki.get(mecz)
 
             if wynik is not None:
-                pkt = licz_punkty(typ, wynik)
+                pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
                 suma += pkt
                 if pkt == 3:
                     dokladne += 1
