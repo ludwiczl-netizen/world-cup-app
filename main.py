@@ -653,6 +653,11 @@ setInterval(refreshRanking, 15000);
     
 from fastapi.responses import JSONResponse
 
+@app.get("/teams")
+def teams():
+    return get_all_teams()
+
+
 @app.get("/ranking-data")
 def ranking_data():
 
