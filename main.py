@@ -6,9 +6,76 @@ import pandas as pd
 import urllib.parse
 import requests
 import time
+from fastapi_utils.tasks import repeat_every
+
+# ===== API CONFIG =====
+FOOTBALL_API_KEY = "3c4dc87b557f4040b3bb921f1ecd83c7"
+FOOTBALL_API_URL = "https://api.football-data.org/v4/competitions/WC/matches"
+
+HEADERS = {
+    "X-Auth-Token": FOOTBALL_API_KEY
+}
+
+# cache API
+LAST_API_UPDATE = 0
+API_CACHE = {}
 
 def norm(name):
     return name.strip().lower()
+
+def normalize_match_name(mecz):
+    parts = [p.strip().lower() for p in mecz.split("-")]
+    return tuple(sorted(parts))
+TEAM_MAP = {
+    "Poland": "Polska",
+    "Germany": "Niemcy",
+    "France": "Francja",
+    "Spain": "Hiszpania",
+    "United States": "USA",
+    "Argentina": "Argentyna",
+    "Brazil": "Brazylia",
+    "Netherlands": "Holandia",
+    "Japan": "Japonia",
+    "South Korea": "Korea Południowa",
+    "Mexico": "Meksyk",
+    "Switzerland": "Szwajcaria",
+    "Sweden": "Szwecja",
+    "Turkey": "Turcja",
+    "Saudi Arabia": "Arabia Saudyjska",
+    "Canada": "Kanada",
+    "South Africa": "RPA",
+    "Czech Republic": "Czechy",
+    "Bosnia and Herzegovina": "Bośnia i Hercegowina",
+    "Paraguay": "Paragwaj",
+    "Qatar": "Katar",
+    "Morocco": "Maroko",
+    "Haiti": "Haiti",
+    "Australia": "Australia",
+    "Ecuador": "Ekwador",
+    "Ivory Coast": "Wybrzeże Kości Słoniowej",
+    "Tunisia": "Tunezja",
+    "Cape Verde": "Republika Zielonego Przylądka",
+    "Belgium": "Belgia",
+    "Egypt": "Egipt",
+    "Uruguay": "Urugwaj",
+    "Iran": "Iran",
+    "New Zealand": "Nowa Zelandia",
+    "Senegal": "Senegal",
+    "Iraq": "Irak",
+    "Norway": "Norwegia",
+    "Algeria": "Algieria",
+    "Austria": "Austria",
+    "Jordan": "Jordania",
+    "Portugal": "Portugalia",
+    "DR Congo": "DR Konga",
+    "Croatia": "Chorwacja",
+    "Ghana": "Ghana",
+    "Panama": "Panama",
+    "Uzbekistan": "Uzbekistan",
+    "Colombia": "Kolumbia",
+    "England": "Anglia",
+    "Scotland": "Szkocja"
+}
 
 # ===== APP =====
 app = FastAPI()
@@ -23,10 +90,6 @@ xls_cached = pd.ExcelFile(FILE)
 # ===== STYLE =====
 STYLE = """
 <style>
-
-body {
-    font-family: Arial, "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-}
 
 
 /* ===== TABELA (RANKING + ADMIN) ===== */
@@ -89,7 +152,9 @@ table.ranking tr:nth-child(4) td { color:#cd7f32; }
 .p0 { color:#ef5350; }
 
 .up {
-    color    animation: popUp 0.4s ease;    color:#4caf50;
+    color:#4caf50;
+    margin-left:5px;
+    animation: popUp 0.4s ease;
 }
 
 .down {
@@ -237,7 +302,7 @@ button {
 }
 /* ===== PODSTAWA ===== */
 body {
-    font-family: Arial;
+    font-family: Arial, "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
     background:#0f0f0f;
     color:#e0e0e0;
     margin:0;
@@ -256,6 +321,7 @@ h2 {
 
 # ===== FLAGI (działają na Windows) =====
 def get_flag(country):
+        
     codes = {
         "Polska":"pl","Niemcy":"de","Francja":"fr","Hiszpania":"es",
         "USA":"us","Argentyna":"ar","Brazylia":"br","Holandia":"nl",
@@ -281,14 +347,28 @@ def get_flag(country):
 
 # ===== WYNIKI =====
 def get_wyniki():
-    data = supabase.table("wyniki").select("*").order("id").execute()
+    db = supabase.table("wyniki").select("*").order("id").execute()
+    api = get_api_cached()
+
     out = {}
-    for r in data.data:
+
+    for r in db.data:
+        mecz = r["mecz"].strip()
+        key = normalize_match_name(mecz)
+
+        # ✅ ręczne dane mają priorytet
         if r["gol1"] is not None and r["gol2"] is not None:
-            out[r["mecz"].strip()] = (r["gol1"], r["gol2"])
+            out[mecz] = (r["gol1"], r["gol2"])
+
+        # ✅ fallback API
+        elif key in api:
+            out[mecz] = api[key]
+
         else:
-            out[r["mecz"].strip()] = None
+            out[mecz] = None
+
     return out
+
 
 # ===== PUNKTY =====
 def licz_punkty(typ, wynik):
@@ -306,6 +386,74 @@ def licz_punkty(typ, wynik):
         return 0
     except:
         return 0
+
+# ===== API FETCH =====
+def fetch_matches_from_api():
+    try:
+        response = requests.get(FOOTBALL_API_URL, headers=HEADERS, timeout=10)
+        data = response.json()
+
+        matches = {}
+
+        for m in data.get("matches", []):
+            if m["status"] != "FINISHED":
+                continue
+
+            home_en = m["homeTeam"]["name"]
+            away_en = m["awayTeam"]["name"]
+
+            home = TEAM_MAP.get(home_en, home_en)
+            away = TEAM_MAP.get(away_en, away_en)
+
+            key = normalize_match_name(f"{home} - {away}")
+
+            score1 = m["score"]["fullTime"]["home"]
+            score2 = m["score"]["fullTime"]["away"]
+
+            if score1 is None or score2 is None:
+                continue
+
+            matches[key] = (score1, score2)
+
+        return matches
+
+    except Exception as e:
+        print("API error:", e)
+        return {}
+
+def get_api_cached():
+    global LAST_API_UPDATE, API_CACHE
+
+    if time.time() - LAST_API_UPDATE > 300:
+        API_CACHE = fetch_matches_from_api()
+        LAST_API_UPDATE = time.time()
+
+    return API_CACHE
+
+def update_results_from_api():
+    api = get_api_cached()
+    db = supabase.table("wyniki").select("*").execute()
+
+    for row in db.data:
+        mecz = row["mecz"].strip()
+        key = normalize_match_name(mecz)
+
+        # ✅ tylko gdy BRAK wyniku ręcznego
+        if row["gol1"] is None and row["gol2"] is None:
+
+            if key in api:
+                g1, g2 = api[key]
+
+                print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
+
+                supabase.table("wyniki").update({
+                    "gol1": g1,
+                    "gol2": g2
+                }).eq("id", row["id"])\
+                 .is_("gol1", None)\
+                 .is_("gol2", None)\
+                 .execute()
+
 
 # ===== HOME =====
 @app.get("/", response_class=HTMLResponse)
@@ -601,3 +749,7 @@ async def save(request: Request):
 
     
     return RedirectResponse("/admin", status_code=303)
+@app.on_event("startup")
+@repeat_every(seconds=300)
+def auto_update_results_task():
+    update_results_from_api()
