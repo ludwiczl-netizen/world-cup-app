@@ -361,10 +361,7 @@ def get_wyniki():
         # ✅ ręczne dane mają priorytet
         if r["gol1"] is not None and r["gol2"] is not None:
             out[mecz] = (r["gol1"], r["gol2"])
-
-        # ✅ fallback API
-        elif key in api:
-            out[mecz] = api[key]
+         
 
         else:
             out[mecz] = None
