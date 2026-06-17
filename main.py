@@ -219,7 +219,8 @@ img.flag {
 
     /* 🔥 ZWĘŻENIE KOLUMNY GRACZ */
     th:nth-child(2), td:nth-child(2) {
-        max-width:140 white-space:nowrap;    max-width:140px;
+        white-space:nowrap;
+        max-width:140px;
         overflow:visible;
         #overflow:hidden;
         #text-overflow:ellipsis;
@@ -262,8 +263,9 @@ img.flag {
     }
 }
 /* ===== ADMIN TABLE ===== */
- max-width:600px;table.admin {
+table.admin {
     margin:auto;
+    max-width:600px;
 }
 
 
@@ -357,25 +359,22 @@ def get_wyniki():
         mecz = r["mecz"].strip()
         key = normalize_match_name(mecz)
 
-        # ✅ ręczne dane mają priorytet
         if r["gol1"] is not None and r["gol2"] is not None:
 
-            
-            if r.get("source") == "manual":
-                status = None
-            elif key in api:
+            source = r.get("source") or "manual"
+
+            if key in api:
                 status = api[key]["status"]
             else:
                 status = None
 
-
             out[mecz] = {
                 "g1": r["gol1"],
                 "g2": r["gol2"],
-                "source": r.get("source", "manual"),
+                "source": source,
                 "status": status
             }
-      
+
         elif key in api:
             out[mecz] = {
                 "g1": api[key]["g1"],
@@ -383,12 +382,12 @@ def get_wyniki():
                 "source": "auto",
                 "status": api[key]["status"]
             }
-   
 
         else:
             out[mecz] = None
 
     return out
+
 
 
 # ===== PUNKTY =====
@@ -475,7 +474,7 @@ def update_results_from_api():
         key = normalize_match_name(mecz)
 
         # ✅ tylko gdy BRAK wyniku ręcznego
-        if is_empty(row["gol1"]) and is_empty(row["gol2"]):
+        if is_empty(row["gol1"]) and is_empty(row["gol2"]) and row.get("source") != "manual":
 
             if key in api:
                 g1 = api[key]["g1"]
@@ -785,7 +784,7 @@ def player(name: str):
 
                 if wynik.get("source") == "auto":
                     badges += " ✅AUTO"
-                else:
+                elif wynik.get("source") == "manual":
                     badges += " ✍️"
 
                 wynik_txt += badges
