@@ -408,8 +408,11 @@ def fetch_matches_from_api():
 
             key = normalize_match_name(f"{home} - {away}")
 
-            score1 = m["score"]["fullTime"]["home"]
-            score2 = m["score"]["fullTime"]["away"]
+            score = m["score"].get("current") or m["score"].get("fullTime") or {}
+            
+            score1 = score.get("home")
+            score2 = score.get("away")
+
 
             if score1 is None or score2 is None:
                 continue
