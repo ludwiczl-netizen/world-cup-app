@@ -459,17 +459,19 @@ def update_results_from_api():
 
 
 # ===== HOME =====
-from datetime import datetime
 
-html += f"<p style='text-align:center;color:#888;'>last update: {datetime.now().strftime('%H:%M:%S')}</p>"
 
 @app.get("/", response_class=HTMLResponse)
 def home():
+
 
     #update_missing_results()
 
     xls = xls_cached
     wyniki = get_wyniki()
+    from datetime import datetime
+
+    html += f"<p style='text-align:center;color:#888;'>last update: {datetime.now().strftime('%H:%M:%S')}</p>"
 
     old_data = supabase.table("ranking_history_old").select("*").execute()
 
