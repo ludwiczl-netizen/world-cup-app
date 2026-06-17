@@ -765,14 +765,34 @@ def player(name: str):
     return html
 
 # ===== ADMIN =====
+
+from fastapi import Request
+
 @app.get("/admin", response_class=HTMLResponse)
-def admin():
+def admin(request: Request):
 
     data = supabase.table("wyniki").select("*").order("id").execute()
 
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>Panel wyników</h2>"
+
+    # ✅ komunikat po sync
+    if request.query_params.get("sync") == "ok":
+        html += "<p style='color:lightgreen;text-align:center;'>✅ Wyniki zaktualizowane</p>"
+
+    # ✅ przycisk sync
+    html += """
+    <div style='text-align:center; margin-bottom:10px;'>
+        <form method='post' action='/sync'>
+            <button type='submit' style='background:#28a745;color:white;'>🔄 Aktualizuj wyniki</button>
+        </form>
+    </div>
+    """
+
+    
+    # ✅ dopiero potem główny form
     html += "<form method='post'>"
+
     html += "<table class='admin'>"
 
     for i, r in enumerate(data.data):
@@ -885,7 +905,15 @@ async def save(request: Request):
 
 
     
-    return RedirectResponse("/admin", status_code=303)
+    return RedirectResponse("/admin?sync=ok", status_code=303)
+
+@app.post("/sync")
+def sync_api():
+    try:
+        update_results_from_api()
+        return RedirectResponse("/admin?sync=ok", status_code=303)
+    except Exception as e:
+        return f"Błąd sync: {e}"
 
 import asyncio
 
