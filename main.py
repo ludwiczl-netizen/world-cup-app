@@ -222,8 +222,6 @@ img.flag {
         white-space:nowrap;
         max-width:140px;
         overflow:visible;
-        #overflow:hidden;
-        #text-overflow:ellipsis;
     }
 }
 
@@ -263,9 +261,9 @@ img.flag {
     }
 }
 /* ===== ADMIN TABLE ===== */
-table.admin {
-    margin:auto;
-    max-width:600px;
+ table.admin {
+     max-width:600px;
+     margin:auto;
 }
 
 
@@ -359,35 +357,18 @@ def get_wyniki():
         mecz = r["mecz"].strip()
         key = normalize_match_name(mecz)
 
+        # ✅ ręczne dane mają priorytet
         if r["gol1"] is not None and r["gol2"] is not None:
+            out[mecz] = (r["gol1"], r["gol2"])
 
-            source = r.get("source") or "manual"
-
-            if key in api:
-                status = api[key]["status"]
-            else:
-                status = None
-
-            out[mecz] = {
-                "g1": r["gol1"],
-                "g2": r["gol2"],
-                "source": source,
-                "status": status
-            }
-
+        # ✅ fallback API
         elif key in api:
-            out[mecz] = {
-                "g1": api[key]["g1"],
-                "g2": api[key]["g2"],
-                "source": "auto",
-                "status": api[key]["status"]
-            }
+            out[mecz] = api[key]
 
         else:
             out[mecz] = None
 
     return out
-
 
 
 # ===== PUNKTY =====
@@ -416,6 +397,8 @@ def fetch_matches_from_api():
         matches = {}
 
         for m in data.get("matches", []):
+            if m["status"] not in ["FINISHED", "IN_PLAY"]:
+                continue
 
             home_en = m["homeTeam"]["name"]
             away_en = m["awayTeam"]["name"]
@@ -425,28 +408,13 @@ def fetch_matches_from_api():
 
             key = normalize_match_name(f"{home} - {away}")
 
-            status = m["status"]
+            score1 = m["score"]["fullTime"]["home"]
+            score2 = m["score"]["fullTime"]["away"]
 
-            g1 = m["score"]["fullTime"]["home"]
-            g2 = m["score"]["fullTime"]["away"]
-
-            # LIVE → użyj partial score
-            if status == "IN_PLAY":
-                half = m["score"].get("halfTime") or {}
-                full = m["score"].get("fullTime") or {}
-
-                g1 = half.get("home") if half.get("home") is not None else full.get("home")
-                g2 = half.get("away") if half.get("away") is not None else full.get("away")
-
-
-            if g1 is None or g2 is None:
+            if score1 is None or score2 is None:
                 continue
 
-            matches[key] = {
-                "g1": g1,
-                "g2": g2,
-                "status": status  # 🔥 LIVE info
-            }
+            matches[key] = (score1, score2)
 
         return matches
 
@@ -463,7 +431,7 @@ def get_api_cached():
 
     return API_CACHE
 def is_empty(v):
-    return v is None
+    return v is None or str(v).strip() == ""
 
 def update_results_from_api():
     api = get_api_cached()
@@ -474,18 +442,16 @@ def update_results_from_api():
         key = normalize_match_name(mecz)
 
         # ✅ tylko gdy BRAK wyniku ręcznego
-        if is_empty(row["gol1"]) and is_empty(row["gol2"]) and (row.get("source") or "manual") != "manual":
+        if is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
             if key in api:
-                g1 = api[key]["g1"]
-                g2 = api[key]["g2"]
+                g1, g2 = api[key]
 
                 print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
 
                 supabase.table("wyniki").update({
                     "gol1": g1,
-                    "gol2": g2,
-                    "source": "auto"
+                    "gol2": g2
                 }).eq("id", row["id"])\
                  .execute()
 
@@ -544,7 +510,7 @@ def home():
             wynik = wyniki.get(mecz)
 
             if wynik is not None:
-                pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
+                pkt = licz_punkty(typ, wynik)
                 suma += pkt
                 if pkt == 3:
                     dokladne += 1
@@ -631,7 +597,7 @@ async function refreshRanking() {
             html += `
                 <tr>
                     <td>${pos}</td>
-                    <td><a href="/gracz/${encodeURIComponent(r.name)}">${r.name}</a>${change}</td>
+                    <td><a href='/gracz/${encodeURIComponent(r.name)}'>${r.name}</a>${change}</td>
                     <td>${r.pkt}</td>
                     <td>${r.dokladne}</td>
                 </tr>
@@ -694,7 +660,7 @@ def ranking_data():
             wynik = wyniki.get(mecz)
 
             if wynik is not None:
-                pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
+                pkt = licz_punkty(typ, wynik)
                 suma += pkt
                 if pkt == 3:
                     dokladne += 1
@@ -769,32 +735,9 @@ def player(name: str):
             mecz_html = mecz
 
         if wynik is not None:
-            pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
+            pkt = licz_punkty(typ, wynik)
             suma += pkt
-            if wynik:
-                
-                g1 = wynik["g1"]
-                g2 = wynik["g2"]
-
-                wynik_txt = f"{g1}:{g2}"
-                badges = ""
-
-                if wynik.get("status") == "IN_PLAY":
-                    badges += " 🔴LIVE"
-
-                source = wynik.get("source")
-
-                if source == "auto":
-                    badges += " ✅AUTO"
-                elif source == "manual":
-                    badges += " ✍️"
-                else:
-                    badges += " ⚪"
-
-                wynik_txt += badges
-
-            else:
-                wynik_txt = "-"
+            wynik_txt = f"{wynik[0]}:{wynik[1]}"
         else:
             pkt = "-"
             wynik_txt = "-"
@@ -883,16 +826,9 @@ async def save(request: Request):
         val1 = None if g1=="" else int(g1) if g1 and g1.isdigit() else row["gol1"]
         val2 = None if g2=="" else int(g2) if g2 and g2.isdigit() else row["gol2"]
 
-        
-        new_source = "manual"
-
-        if val1 is None and val2 is None:
-            new_source = "manual"  # 💥 wymuszenie blokady API
-
         supabase.table("wyniki").update({
             "gol1": val1,
-            "gol2": val2,
-            "source": new_source
+            "gol2": val2
         }).eq("id", row["id"]).execute()
         
     xls = xls_cached
@@ -919,7 +855,7 @@ async def save(request: Request):
             wynik = wyniki.get(mecz)
 
             if wynik is not None:
-                pkt = licz_punkty(typ, (wynik["g1"], wynik["g2"]))
+                pkt = licz_punkty(typ, wynik)
                 suma += pkt
                 if pkt == 3:
                     dokladne += 1
@@ -969,16 +905,12 @@ async def save(request: Request):
     
     return RedirectResponse("/admin?sync=ok", status_code=303)
 
-from fastapi import Request
-
 @app.post("/sync")
-async def sync_api(request: Request):
+def sync_api():
     try:
         update_results_from_api()
-        print("SYNC CLICKED ✅")
         return RedirectResponse("/admin?sync=ok", status_code=303)
     except Exception as e:
-        print("SYNC ERROR ❌", e)
         return f"Błąd sync: {e}"
 
 import asyncio
