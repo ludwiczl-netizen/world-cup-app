@@ -398,7 +398,7 @@ def fetch_matches_from_api():
         matches = {}
 
         for m in data.get("matches", []):
-            if m["status"] in ["FINISHED", "IN_PLAY"]:
+            if m["status"] != "FINISHED":
                 continue
 
             home_en = m["homeTeam"]["name"]
@@ -433,7 +433,7 @@ def get_api_cached():
 
     return API_CACHE
 def is_empty(v):
-    return v is None or str(v).strip
+    return v is None or str(v).strip() == ""
 
 def update_results_from_api():
     api = get_api_cached()
