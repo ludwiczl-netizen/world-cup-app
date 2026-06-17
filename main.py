@@ -29,57 +29,55 @@ def normalize_match_name(mecz):
     parts = [p.strip().lower() for p in mecz.split(" - ")]
     return tuple(sorted(parts))
 TEAM_MAP = {
-    "Poland": "Polska",
-    "Germany": "Niemcy",
-    "France": "Francja",
-    "Spain": "Hiszpania",
-    "United States": "USA",
-    "Argentina": "Argentyna",
-    "Brazil": "Brazylia",
-    "Netherlands": "Holandia",
-    "Japan": "Japonia",
-    "South Korea": "Korea Południowa",
-    "Mexico": "Meksyk",
-    "Switzerland": "Szwajcaria",
-    "Sweden": "Szwecja",
-    "Turkey": "Turcja",
-    "Saudi Arabia": "Arabia Saudyjska",
-    "Canada": "Kanada",
-    "South Africa": "RPA",
-    "Czechia": "Czechy",
-    "Bosnia and Herzegovina": "Bośnia i Hercegowina",
-    "Paraguay": "Paragwaj",
-    "Qatar": "Katar",
-    "Morocco": "Maroko",
-    "Haiti": "Haiti",
-    "Australia": "Australia",
-    "Ecuador": "Ekwador",
-    "Ivory Coast": "Wybrzeże Kości Słoniowej",
-    "Tunisia": "Tunezja",
-    "Cape Verde Islands": "Republika Zielonego Przylądka",
-    "Belgium": "Belgia",
-    "Egypt": "Egipt",
-    "Uruguay": "Urugwaj",
-    "Iran": "Iran",
-    "New Zealand": "Nowa Zelandia",
-    "Senegal": "Senegal",
-    "Iraq": "Irak",
-    "Norway": "Norwegia",
     "Algeria": "Algieria",
+    "Argentina": "Argentyna",
+    "Australia": "Australia",
     "Austria": "Austria",
-    "Jordan": "Jordania",
-    "Portugal": "Portugalia",
+    "Belgium": "Belgia",
+    "Bosnia-Herzegovina": "Bośnia i Hercegowina",
+    "Brazil": "Brazylia",
+    "Canada": "Kanada",
+    "Cape Verde Islands": "Republika Zielonego Przylądka",
+    "Colombia": "Kolumbia",
     "Congo DR": "DR Konga",
     "Croatia": "Chorwacja",
-    "Ghana": "Ghana",
-    "Panama": "Panama",
-    "Uzbekistan": "Uzbekistan",
-    "Colombia": "Kolumbia",
+    "Curaçao": "Curacao",
+    "Czechia": "Czechy",
+    "Ecuador": "Ekwador",
+    "Egypt": "Egipt",
     "England": "Anglia",
+    "France": "Francja",
+    "Germany": "Niemcy",
+    "Ghana": "Ghana",
+    "Haiti": "Haiti",
+    "Iran": "Iran",
+    "Iraq": "Irak",
+    "Ivory Coast": "Wybrzeże Kości Słoniowej",
+    "Japan": "Japonia",
+    "Jordan": "Jordania",
+    "Mexico": "Meksyk",
+    "Morocco": "Maroko",
+    "Netherlands": "Holandia",
+    "New Zealand": "Nowa Zelandia",
+    "Norway": "Norwegia",
+    "Panama": "Panama",
+    "Paraguay": "Paragwaj",
+    "Portugal": "Portugalia",
+    "Qatar": "Katar",
+    "Saudi Arabia": "Arabia Saudyjska",
     "Scotland": "Szkocja",
-    "Curaçao": "Curacao"
+    "Senegal": "Senegal",
+    "South Africa": "RPA",
+    "South Korea": "Korea Południowa",
+    "Spain": "Hiszpania",
+    "Sweden": "Szwecja",
+    "Switzerland": "Szwajcaria",
+    "Tunisia": "Tunezja",
+    "Turkey": "Turcja",
+    "United States": "USA",
+    "Uruguay": "Urugwaj",
+    "Uzbekistan": "Uzbekistan"
 }
-
 # ===== APP =====
 app = FastAPI()
 
@@ -652,10 +650,6 @@ setInterval(refreshRanking, 15000);
     return html
     
 from fastapi.responses import JSONResponse
-
-@app.get("/teams")
-def teams():
-    return get_all_teams()
 
 
 @app.get("/ranking-data")
