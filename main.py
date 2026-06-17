@@ -349,7 +349,7 @@ def get_flag(country):
 # ===== WYNIKI =====
 def get_wyniki():
     db = supabase.table("wyniki").select("*").order("id").execute()
-    api = fetch_matches_from_api()
+    api = get_api_cached()
 
     out = {}
 
