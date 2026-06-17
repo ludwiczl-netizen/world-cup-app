@@ -398,7 +398,7 @@ def fetch_matches_from_api():
         matches = {}
 
         for m in data.get("matches", []):
-            if m["status"] != "FINISHED":
+            if m["status"] in ["FINISHED", "IN_PLAY"]:
                 continue
 
             home_en = m["homeTeam"]["name"]
@@ -421,6 +421,7 @@ def fetch_matches_from_api():
 
     except Exception as e:
         print("API error:", e)
+        print(f"API matches loaded: {len(matches)}")
         return {}
 
 def get_api_cached():
@@ -458,6 +459,10 @@ def update_results_from_api():
 
 
 # ===== HOME =====
+from datetime import datetime
+
+html += f"<p style='text-align:center;color:#888;'>last update: {datetime.now().strftime('%H:%M:%S')}</p>"
+
 @app.get("/", response_class=HTMLResponse)
 def home():
 
