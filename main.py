@@ -390,6 +390,19 @@ def licz_punkty(typ, wynik):
         return 0
 
 # ===== API FETCH =====
+
+def get_all_teams():
+    response = requests.get(FOOTBALL_API_URL, headers=HEADERS)
+    data = response.json()
+
+    teams = set()
+
+    for m in data.get("matches", []):
+        teams.add(m["homeTeam"]["name"])
+        teams.add(m["awayTeam"]["name"])
+
+    return sorted(teams)
+
 def fetch_matches_from_api():
     try:
         response = requests.get(FOOTBALL_API_URL, headers=HEADERS, timeout=10)
