@@ -46,7 +46,7 @@ TEAM_MAP = {
     "Saudi Arabia": "Arabia Saudyjska",
     "Canada": "Kanada",
     "South Africa": "RPA",
-    "Czech Republic": "Czechy",
+    "Czechia": "Czechy",
     "Bosnia and Herzegovina": "Bośnia i Hercegowina",
     "Paraguay": "Paragwaj",
     "Qatar": "Katar",
@@ -56,7 +56,7 @@ TEAM_MAP = {
     "Ecuador": "Ekwador",
     "Ivory Coast": "Wybrzeże Kości Słoniowej",
     "Tunisia": "Tunezja",
-    "Cape Verde": "Republika Zielonego Przylądka",
+    "Cape Verde Islands": "Republika Zielonego Przylądka",
     "Belgium": "Belgia",
     "Egypt": "Egipt",
     "Uruguay": "Urugwaj",
@@ -69,14 +69,15 @@ TEAM_MAP = {
     "Austria": "Austria",
     "Jordan": "Jordania",
     "Portugal": "Portugalia",
-    "DR Congo": "DR Konga",
+    "Congo DR": "DR Konga",
     "Croatia": "Chorwacja",
     "Ghana": "Ghana",
     "Panama": "Panama",
     "Uzbekistan": "Uzbekistan",
     "Colombia": "Kolumbia",
     "England": "Anglia",
-    "Scotland": "Szkocja"
+    "Scotland": "Szkocja",
+    "Curaçao": "Curacao"
 }
 
 # ===== APP =====
@@ -403,8 +404,8 @@ def fetch_matches_from_api():
             home_en = m["homeTeam"]["name"]
             away_en = m["awayTeam"]["name"]
 
-            home = TEAM_MAP.get(home_en, home_en)
-            away = TEAM_MAP.get(away_en, away_en)
+            home = TEAM_MAP.get(home_en, TEAM_MAP.get(home_en.strip(), home_en))
+            away = TEAM_MAP.get(away_en, TEAM_MAP.get(away_en.strip(), away_en))
 
             key = normalize_match_name(f"{home} - {away}")
 
@@ -427,6 +428,8 @@ def fetch_matches_from_api():
         print("=== API MATCHES ===")
         for k, v in matches.items():
             print(k, v)
+        print("API:", home_en, "-", away_en)
+        print("MAPPED:", home, "-", away)
 
         
         return matches
