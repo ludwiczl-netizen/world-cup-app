@@ -6,6 +6,7 @@ import pandas as pd
 import urllib.parse
 import requests
 import time
+import os
 import asyncio
 
 @app.on_event("startup")
@@ -23,7 +24,7 @@ async def background_task():
         await asyncio.sleep(300)  # co 5 min
 
 # ===== API CONFIG =====
-FOOTBALL_API_KEY = "3c4dc87b557f4040b3bb921f1ecd83c7"
+FOOTBALL_API_KEY = os.getenv("FOOTBALL_API_KEY")
 FOOTBALL_API_URL = "https://api.football-data.org/v4/competitions/WC/matches"
 
 HEADERS = {
