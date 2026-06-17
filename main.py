@@ -444,7 +444,7 @@ def update_results_from_api():
         key = normalize_match_name(mecz)
 
         # ✅ tylko gdy BRAK wyniku ręcznego
-        if is_empty(row["gol1"]) and is_empty(row["["gol2"]):
+        if is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
             if key in api:
                 g1, g2 = api[key]
