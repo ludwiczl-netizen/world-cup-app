@@ -26,7 +26,7 @@ def norm(name):
     return name.strip().lower()
 
 def normalize_match_name(mecz):
-    parts = [p.strip().lower() for p in mecz
+    parts = [p.strip().lower() for p in mecz.split(" - ")]
     return tuple(sorted(parts))
 TEAM_MAP = {
     "Poland": "Polska",
@@ -392,16 +392,17 @@ def licz_punkty(typ, wynik):
 # ===== API FETCH =====
 
 def get_all_teams():
-    response = requests.get(FOOTBALL_API_URL, headers=HEADERS)
+    url = "https://api.football-data.org/v4/competitions/WC/teams"
+    response = requests.get(url, headers=HEADERS)
     data = response.json()
 
-    teams = set()
+    teams = []
 
-    for m in data.get("matches", []):
-        teams.add(m["homeTeam"]["name"])
-        teams.add(m["awayTeam"]["name"])
+    for t in data.get("teams", []):
+        teams.append(t["name"])
 
     return sorted(teams)
+
 
 def fetch_matches_from_api():
     try:
