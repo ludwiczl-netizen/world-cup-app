@@ -374,7 +374,7 @@ def get_wyniki():
 
         # ✅ fallback API
         elif key in api:
-            out[mecz] = api[key]
+            out[mecz] = api[key]["score"]
 
         else:
             out[mecz] = None
@@ -448,7 +448,12 @@ def fetch_matches_from_api():
             if score1 is None or score2 is None:
                 continue
 
-            matches[key] = (score1, score2)
+            
+            matches[key] = {
+                 "score": (score1, score2),
+                "status": m["status"]
+            }
+
         print("=== API MATCHES ===")
         for k, v in matches.items():
             print(k, v)
@@ -490,7 +495,7 @@ def update_results_from_api(force=False):
         if is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
             if key in api:
-                g1, g2 = api[key]
+                g1, g2 = api[key]["score"]
 
                 print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
 
