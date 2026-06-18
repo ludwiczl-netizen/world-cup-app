@@ -552,7 +552,7 @@ def home():
             "dokladne": dokladne
         })
 
-    ranking.sort(key=lambda x: x["pkt"], reverse=True)
+    ranking.sort(key=lambda x: (x["pkt"], x["dokladne"]), reverse=True)
 
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>🏆 Ranking</h2>"
@@ -703,7 +703,7 @@ def ranking_data():
             "dokladne": dokladne
         })
 
-    ranking.sort(key=lambda x: x["pkt"], reverse=True)
+    ranking.sort(key=lambda x: (x["pkt"], x["dokladne"]), reverse=True)
 
     out = []
 
@@ -899,7 +899,7 @@ async def save(request: Request):
         })
 
    # ✅ DOPIERO TU (PO PĘTLI)
-    ranking.sort(key=lambda x: x["pkt"], reverse=True)
+    ranking.sort(key=lambda x: (x["pkt"], x["dokladne"]), reverse=True)
 
     # 🔥 pobierz stary ranking (PRZED usunięciem!)
     old_data = supabase.table("ranking_history").select("*").execute()
