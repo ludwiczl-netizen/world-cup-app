@@ -277,6 +277,18 @@ table.admin td:nth-child(3) {
     text-align:center;
 }
 
+.live {
+    color:#4caf50;
+    font-weight:bold;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity:1; }
+    50% { opacity:0.6; }
+    100% { opacity:1; }
+}
+
 /* ===== INPUTY (ADMIN) ===== */
 input.score {
     width:26px !important;
@@ -493,6 +505,9 @@ def update_results_from_api(force=False):
 @app.get("/", response_class=HTMLResponse)
 def home():
 
+    api = get_api_cached()
+    live_exists = any(v.get("status") == "IN_PLAY" for v in api.values())
+
 
     #update_missing_results()
 
@@ -556,6 +571,8 @@ def home():
 
     html = '<meta name="viewport" content="width=device-width, initial-scale=1">' + STYLE
     html += "<h2>🏆 Ranking</h2>"
+    if live_exists:
+        html += "<p style='text-align:center;color:#4caf50;font-weight:bold;'>🟢 Mecze trwają NA ŻYWO</p>"
     html += "<div class='table-wrap'>"
     html += "<table id='ranking-table' class='ranking'>"
     html += "<tr><th>#</th><th>Gracz</th><th>Pkt</th><th>🎯</th></tr>"
@@ -826,12 +843,22 @@ def admin(request: Request):
     html += "<table class='admin'>"
 
     for i, r in enumerate(data.data):
+        api = get_api_cached()
+        key = normalize_match_name(r['mecz'])
+        status = api.get(key, {}).get("status")
 
         g1 = "" if r["gol1"] is None else str(r["gol1"])
         g2 = "" if r["gol2"] is None else str(r["gol2"])
 
         html += "<tr>"
-        html += f"<td>{r['mecz']}</td>"
+        
+        live_tag = ""
+
+        if status == "IN_PLAY":
+            live_tag = " 🟢 LIVE"
+
+        html += f"<td>{r['mecz']}{live_tag}</td>"
+
         html += f"<td><input class='score' name='g1_{i}' value='{g1}' /></td>"
         html += f"<td><input class='score' name='g2_{i}' value='{g2}' /></td>"
         html += "</tr>"
