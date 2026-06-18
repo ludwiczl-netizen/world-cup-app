@@ -462,15 +462,18 @@ def get_api_cached():
 def is_empty(v):
     return v is None or str(v).strip() == ""
 
-def update_results_from_api():
-    api = get_api_cached()
+def update_results_from_api(force=False):
+    if force:
+        api = fetch_matches_from_api()   # 🔥 bez cache
+    else:
+        api = get_api_cached()
+
     db = supabase.table("wyniki").select("*").execute()
 
     for row in db.data:
         mecz = row["mecz"].strip()
         key = normalize_match_name(mecz)
 
-        # ✅ tylko gdy BRAK wyniku ręcznego
         if is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
             if key in api:
@@ -481,9 +484,7 @@ def update_results_from_api():
                 supabase.table("wyniki").update({
                     "gol1": g1,
                     "gol2": g2
-                }).eq("id", row["id"])\
-                 .execute()
-
+                }).eq("id", row["id"]).execute()
 
 # ===== HOME =====
 
@@ -938,10 +939,11 @@ async def save(request: Request):
 @app.post("/sync")
 def sync_api():
     try:
-        update_results_from_api()
+        update_results_from_api(force=True)  # 🔥 TU
         return RedirectResponse("/admin?sync=ok", status_code=303)
     except Exception as e:
         return f"Błąd sync: {e}"
+
 
 import asyncio
 
