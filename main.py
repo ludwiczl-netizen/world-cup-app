@@ -472,6 +472,7 @@ def update_results_from_api(force=False):
 
     for row in db.data:
         mecz = row["mecz"].strip()
+        print("ROW:", mecz, row["gol1"], row["gol2"])  # 👈 TU
         key = normalize_match_name(mecz)
 
         if is_empty(row["gol1"]) and is_empty(row["gol2"]):
