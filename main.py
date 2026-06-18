@@ -878,9 +878,11 @@ def admin(request: Request):
             live_info = f" <span class='live'>🟢 {g1_live}:{g2_live}</span>"
 
         # ✅ wynik końcowy
+        
         elif status == "FINISHED" and "score" in api_data:
             g1_live, g2_live = api_data["score"]
-            live_info = f" ✅ {g1_live}:{g2_live}"
+            live_info = f" {g1_live}:{g2_live}"
+
 
         html += f"<td>{r['mecz']}{live_info}</td>"
 
