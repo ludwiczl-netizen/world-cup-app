@@ -895,7 +895,6 @@ def admin(request: Request):
 
     return html
 
-    return html
 
 # ===== SAVE =====
 @app.post("/admin")
