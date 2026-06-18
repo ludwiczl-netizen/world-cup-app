@@ -433,10 +433,16 @@ def fetch_matches_from_api():
 
             key = normalize_match_name(f"{home} - {away}")
 
-            score = m["score"]["fullTime"]
+            if m["status"] == "FINISHED":
+                
+                score1 = m["score"]["fullTime"].get("home")
+                score2 = m["score"]["fullTime"].get("away")
+
+            else:
+                tmp = m["score"]["fullTime"] or m["score"]["halfTime"] or m["score"].get("regularTime") or {}
             
-            score1 = score.get("home")
-            score2 = score.get("away")
+                score1 = tmp.get("home")
+                score2 = tmp.get("away")
             
             if score1 is None or score2 is None:
                 score = m["score"].get("halfTime") or {}
@@ -492,10 +498,14 @@ def update_results_from_api(force=False):
         print("ROW:", mecz, row["gol1"], row["gol2"])  # 👈 TU
         key = normalize_match_name(mecz)
 
-        if is_empty(row["gol1"]) and is_empty(row["gol2"]):
+        
+        
+        if key in api:
+            status = api[key]["status"]
+            g1, g2 = api[key]["score"]
 
-            if key in api:
-                g1, g2 = api[key]["score"]
+            # ✅ zapis tylko po zakończeniu
+            if status == "FINISHED" and is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
                 print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
 
@@ -847,8 +857,8 @@ def admin(request: Request):
 
     html += "<table class='admin'>"
 
-    for i, r in enumerate(data.data):
         api = get_api_cached()
+        for i, r in enumerate(data.data):
         key = normalize_match_name(r['mecz'])
         status = api.get(key, {}).get("status")
 
