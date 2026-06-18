@@ -26,7 +26,7 @@ def norm(name):
     return name.strip().lower()
 
 def normalize_match_name(mecz):
-    parts = [p.strip().lower() for p in mecz.split(" - ")]
+    parts = [p.strip().lower() for p in mecz.replace("-", " - ").split(" - ")]
     return tuple(sorted(parts))
 TEAM_MAP = {
     "Algeria": "Algieria",
