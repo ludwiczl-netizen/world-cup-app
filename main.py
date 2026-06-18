@@ -851,29 +851,38 @@ def admin(request: Request):
     </div>
     """
 
-    
-    # ✅ dopiero potem główny form
+    # ✅ form
     html += "<form method='post'>"
-
     html += "<table class='admin'>"
 
+    # ✅ API raz
     api = get_api_cached()
+
     for i, r in enumerate(data.data):
-            
+
         key = normalize_match_name(r['mecz'])
-        status = api.get(key, {}).get("status")
+        api_data = api.get(key, {})
+
+        status = api_data.get("status")
 
         g1 = "" if r["gol1"] is None else str(r["gol1"])
         g2 = "" if r["gol2"] is None else str(r["gol2"])
 
         html += "<tr>"
-        
-        live_tag = ""
 
-        if status == "IN_PLAY":
-            live_tag = " 🟢 LIVE"
+        live_info = ""
 
-        html += f"<td>{r['mecz']}{live_tag}</td>"
+        # ✅ LIVE wynik
+        if status == "IN_PLAY" and "score" in api_data:
+            g1_live, g2_live = api_data["score"]
+            live_info = f" <span class='live'>🟢 {g1_live}:{g2_live}</span>"
+
+        # ✅ wynik końcowy
+        elif status == "FINISHED" and "score" in api_data:
+            g1_live, g2_live = api_data["score"]
+            live_info = f" ✅ {g1_live}:{g2_live}"
+
+        html += f"<td>{r['mecz']}{live_info}</td>"
 
         html += f"<td><input class='score' name='g1_{i}' value='{g1}' /></td>"
         html += f"<td><input class='score' name='g2_{i}' value='{g2}' /></td>"
@@ -883,6 +892,8 @@ def admin(request: Request):
     html += "<button>ZAPISZ</button>"
     html += "</form>"
     html += "<br><a href='/'>⬅ Powrót</a>"
+
+    return html
 
     return html
 
