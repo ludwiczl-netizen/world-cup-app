@@ -498,7 +498,12 @@ def update_results_from_api(force=False):
         print("ROW:", mecz, row["gol1"], row["gol2"])  # 👈 TU
         key = normalize_match_name(mecz)
 
-        
+        print("SZUKAM:", key)
+
+        found = key in api
+
+        print("ZNALEZIONY:", found)
+
         
         if key in api:
             status = api[key]["status"]
@@ -880,8 +885,8 @@ def admin(request: Request):
         # ✅ wynik końcowy
         
         elif status == "FINISHED" and "score" in api_data:
-            g1_live, g2_live = api_data["score"]
-            live_info = f" {g1_live}:{g2_live}"
+            elif status == "FINISHED":
+            live_info = ""
 
 
         html += f"<td>{r['mecz']}{live_info}</td>"
