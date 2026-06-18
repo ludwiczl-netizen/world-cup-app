@@ -884,8 +884,7 @@ def admin(request: Request):
 
         # ✅ wynik końcowy
         
-        elif status == "FINISHED" and "score" in api_data:
-            elif status == "FINISHED":
+        elif status == "FINISHED":
             live_info = ""
 
 
