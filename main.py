@@ -857,11 +857,11 @@ def admin(request: Request):
 
     html += "<table class='admin'>"
 
-        api = get_api_cached()
-        for i, r in enumerate(data.data):
+    api = get_api_cached()
+    for i, r in enumerate(data.data):
             
-            key = normalize_match_name(r['mecz'])
-            status = api.get(key, {}).get("status")
+        key = normalize_match_name(r['mecz'])
+        status = api.get(key, {}).get("status")
 
         g1 = "" if r["gol1"] is None else str(r["gol1"])
         g2 = "" if r["gol2"] is None else str(r["gol2"])
