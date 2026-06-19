@@ -211,15 +211,16 @@ img.flag {
     }
 
     th, td {
-        font-size:15px;
+        font-size:14px;
         padding:6px;
-        white-space:nowrap;
+        white-space:normal;
+        word-wrap:break-word;
     }
 
     /* 🔥 ZWĘŻENIE KOLUMNY GRACZ */
     th:nth-child(2), td:nth-child(2) {
-        white-space:nowrap;
-        max-width:140px;
+        white-space:normal;
+        word-break: break-word;
         overflow:visible;
     }
 }
@@ -269,6 +270,7 @@ img.flag {
 table.admin td:nth-child(1) {
     width:auto;           /* 🔥 mecz ma całą szerokość */
     text-align:left;
+    line-height: 1.2;
 }
 
 table.admin td:nth-child(2),
