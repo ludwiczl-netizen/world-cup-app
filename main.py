@@ -114,6 +114,9 @@ th {
     padding:12px;
     color:#aaa;
 }
+table.ranking th {
+    text-align: left;
+}
 
 td {
     padding:10px;
@@ -633,7 +636,7 @@ def home():
         html += "</tr>"
 
     html += "</table></div>"
-    html += "<br><a href='/admin'>⚙️ Panel admin</a>"
+    html += "<br><a href='/admin'>⚽ Panel meczów</a>"
     html += """
 <script>
 
