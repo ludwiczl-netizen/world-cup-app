@@ -81,6 +81,11 @@ TEAM_MAP = {
 # ===== APP =====
 app = FastAPI()
 
+
+# ===== LIVE RANKING CACHE =====
+LAST_RANKING = {}
+LAST_DIFFS = {}
+
 # ===== CONFIG =====
 SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
 SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
@@ -544,19 +549,7 @@ def home():
 
     html += f"<p style='text-align:center;color:#888;'>last update: {datetime.now().strftime('%H:%M:%S')}</p>"
 
-    old_data = supabase.table("ranking_history_old").select("*").execute()
-
-
-    old_positions = {}
-
-    if old_data.data:
-        old_positions = {
-            norm(r["name"]): r["position"]
-            for r in old_data.data
-        }
-
-
-
+    
     ranking = []
 
     for sheet in xls.sheet_names:
@@ -604,22 +597,6 @@ def home():
 
     for i, r in enumerate(ranking,1):
 
-        old_pos = old_positions.get(r["name"].strip().lower())
-
-        change = ""
-
-        if old_pos is not None:
-            diff = old_pos - i
-
-            if diff > 0:
-                change = f" <span class='up'>🔼{diff}</span>"
-            elif diff < 0:
-                change = f" <span class='down'>🔽{abs(diff)}</span>"
-            else:
-                change = " <span class='same'>➖</span>"
-
-
-
                 
         safe = urllib.parse.quote(r["name"])
 
@@ -627,7 +604,7 @@ def home():
 
         html += "<tr>"
         html += f"<td>{pos}</td>"
-        html += f"<td><a href='/gracz/{safe}'>{r['name']}</a>{change}</td>"
+        html += f"<td><a href='/gracz/{safe}'>{r['name']}</a></td>"
 
         cls = "p3" if i == 1 else "p1" if i <= 3 else ""
 
@@ -682,8 +659,9 @@ async function refreshRanking() {
     } catch(e) {
         console.log("refresh error", e);
     }
+    
 }
-
+window.onload = refreshRanking;
 // 🔁 co 15 sekund
 setInterval(refreshRanking, 15000);
 
@@ -702,14 +680,6 @@ def ranking_data():
     xls = xls_cached
     wyniki = get_wyniki()
 
-    old_data = supabase.table("ranking_history_old").select("*").execute()
-
-    old_positions = {}
-    if old_data.data:
-        old_positions = {
-            norm(r["name"]): r["position"]
-            for r in old_data.data
-        }
 
     ranking = []
 
@@ -747,15 +717,33 @@ def ranking_data():
 
     ranking.sort(key=lambda x: (x["pkt"], x["dokladne"]), reverse=True)
 
+    global LAST_RANKING, LAST_DIFFS
+
     out = []
+
+    # 🔁 poprzedni ranking z RAM
+    prev_positions = LAST_RANKING.copy() if LAST_RANKING else {}
+
+    # ✅ nowy bufor diffów
+    new_diffs = {}
 
     for i, r in enumerate(ranking, 1):
 
-        old_pos = old_positions.get(norm(r["name"]))
+        name_key = norm(r["name"])
+        prev_pos = prev_positions.get(name_key)
+
         diff = 0
 
-        if old_pos is not None:
-            diff = old_pos - i
+        if prev_pos is not None:
+            diff = prev_pos - i
+
+        # 🔥 KLUCZOWA LINIA:
+        # jeśli brak zmiany → zostaje stary diff
+        if diff == 0 and name_key in LAST_DIFFS:
+            diff = LAST_DIFFS[name_key]
+
+        # zapisz do nowego cache
+        new_diffs[name_key] = diff
 
         out.append({
             "position": i,
@@ -764,6 +752,14 @@ def ranking_data():
             "dokladne": r["dokladne"],
             "diff": diff
         })
+
+    # ✅ aktualizacja cache
+    LAST_RANKING = {
+        norm(r["name"]): i
+        for i, r in enumerate(ranking, 1)
+    }
+
+    LAST_DIFFS = new_diffs
 
     return JSONResponse(out)
 
