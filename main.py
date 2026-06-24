@@ -25,9 +25,7 @@ API_CACHE = {}
 def norm(name):
     return name.strip().lower()
 
-def normalize_match_name(mecz):
-    parts = [p.strip().lower() for p in mecz.replace("-", " - ").split(" - ")]
-    return tuple(sorted(parts))
+
 TEAM_MAP = {
     "Algeria": "Algieria",
     "Argentina": "Argentyna",
@@ -375,16 +373,29 @@ def get_wyniki():
     out = {}
 
     for r in db.data:
+        
         mecz = r["mecz"].strip()
-        key = normalize_match_name(mecz)
+
+        try:
+            home, away = [x.strip().lower() for x in mecz.split("-")]
+            key = (home, away)
+        except:
+            key = None
+
 
         # ✅ ręczne dane mają priorytet
         if r["gol1"] is not None and r["gol2"] is not None:
             out[mecz] = (r["gol1"], r["gol2"])
 
         # ✅ fallback API
+        
         elif key in api:
             out[mecz] = api[key]["score"]
+
+        elif key and (key[1], key[0]) in api:
+            g1, g2 = api[(key[1], key[0])]["score"]
+            out[mecz] = (g2, g1)  # 🔥 odwrócenie
+
 
         else:
             out[mecz] = None
@@ -441,7 +452,7 @@ def fetch_matches_from_api():
             home = TEAM_MAP.get(home_en, TEAM_MAP.get(home_en.strip(), home_en))
             away = TEAM_MAP.get(away_en, TEAM_MAP.get(away_en.strip(), away_en))
 
-            key = normalize_match_name(f"{home} - {away}")
+            key = (home.lower(), away.lower())
 
             if m["status"] == "FINISHED":
                 
@@ -506,28 +517,40 @@ def update_results_from_api(force=False):
     for row in db.data:
         mecz = row["mecz"].strip()
         print("ROW:", mecz, row["gol1"], row["gol2"])  # 👈 TU
-        key = normalize_match_name(mecz)
+        
+        try:
+            home, away = [x.strip().lower() for x in mecz.split("-")]
+            key = (home, away)
+        except:
+            key = None
+
 
         print("SZUKAM:", key)
 
-        found = key in api
+        found = key in api or (key and (key[1], key[0]) in api)
 
         print("ZNALEZIONY:", found)
-
-        
+                
         if key in api:
             status = api[key]["status"]
             g1, g2 = api[key]["score"]
+        
+        elif key and (key[1], key[0]) in api:
+            status = api[(key[1], key[0])]["status"]
+            g2, g1 = api[(key[1], key[0])]["score"]
+        else:
+            continue
+
 
             # ✅ zapis tylko po zakończeniu
-            if status == "FINISHED" and is_empty(row["gol1"]) and is_empty(row["gol2"]):
+        if status == "FINISHED" and is_empty(row["gol1"]) and is_empty(row["gol2"]):
 
-                print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
+            print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
 
-                supabase.table("wyniki").update({
-                    "gol1": g1,
-                    "gol2": g2
-                }).eq("id", row["id"]).execute()
+            supabase.table("wyniki").update({
+                "gol1": g1,
+                "gol2": g2
+            }).eq("id", row["id"]).execute()
 
 # ===== HOME =====
 
@@ -866,9 +889,22 @@ def admin(request: Request):
 
     for i, r in enumerate(data.data):
 
-        key = normalize_match_name(r['mecz'])
-        api_data = api.get(key, {})
+        
+        try:
+            home, away = [x.strip().lower() for x in r['mecz'].split("-")]
+            key = (home, away)
+        except:
+            key = None
 
+        
+        
+        api_data = api.get(key)
+        
+        if not api_data and key:
+            api_data = api.get((key[1], key[0]))
+        
+        if not api_data:
+            api_data = {}
         status = api_data.get("status")
 
         g1 = "" if r["gol1"] is None else str(r["gol1"])
