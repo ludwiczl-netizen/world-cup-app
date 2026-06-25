@@ -84,6 +84,7 @@ app = FastAPI()
 LAST_RANKING = {}
 LAST_DIFFS = {}
 
+LIVE_CACHE = {}
 # ===== CONFIG =====
 SUPABASE_URL = "https://viqamqyqfobiwdbgfeoy.supabase.co"
 SUPABASE_KEY = "sb_publishable_Q975X156iJX3Ktd1X_xXOw_ILadf35a"
@@ -396,6 +397,14 @@ def get_wyniki():
             g1, g2 = api[(key[1], key[0])]["score"]
             out[mecz] = (g2, g1)  # 🔥 odwrócenie
 
+        # 🔥 LIVE CACHE (normal)
+        elif key and key in LIVE_CACHE:
+            out[mecz] = LIVE_CACHE[key]
+
+        # 🔥 LIVE CACHE (reverse)
+        elif key and (key[1], key[0]) in LIVE_CACHE:
+            g1, g2 = LIVE_CACHE[(key[1], key[0])]
+            out[mecz] = (g2, g1)
 
         else:
             out[mecz] = None
@@ -477,9 +486,18 @@ def fetch_matches_from_api():
 
             
             matches[key] = {
-                 "score": (score1, score2),
+                "score": (score1, score2),
                 "status": m["status"]
             }
+            
+            # 🔥 zapamiętaj live
+            
+            if m["status"] == "IN_PLAY":
+                LIVE_CACHE[key] = (score1, score2)
+
+            elif m["status"] == "FINISHED":
+                LIVE_CACHE.pop(key, None)
+
 
         print("=== API MATCHES ===")
         for k, v in matches.items():
