@@ -452,60 +452,54 @@ def fetch_matches_from_api():
         matches = {}
 
         for m in data.get("matches", []):
-            if m["status"] not in ["FINISHED", "IN_PLAY"]:
-                continue
-
             home_en = m["homeTeam"]["name"]
             away_en = m["awayTeam"]["name"]
-
-            home = TEAM_MAP.get(home_en, TEAM_MAP.get(home_en.strip(), home_en))
-            away = TEAM_MAP.get(away_en, TEAM_MAP.get(away_en.strip(), away_en))
-
-            key = (home.lower(), away.lower())
-
-            if m["status"] == "FINISHED":
-                
-                score1 = m["score"]["fullTime"].get("home")
-                score2 = m["score"]["fullTime"].get("away")
-
-            else:
-                tmp = m["score"]["fullTime"] or m["score"]["halfTime"] or m["score"].get("regularTime") or {}
             
-                score1 = tmp.get("home")
-                score2 = tmp.get("away")
-            
-            if score1 is None or score2 is None:
-                score = m["score"].get("halfTime") or {}
-                score1 = score.get("home")
-                score2 = score.get("away")
+            home = TEAM_MAP.get(home_en, home_en)
+            away = TEAM_MAP.get(away_en, away_en)
+            status = m.get("status")
 
-
-
+            # ❌ pomijamy tylko przyszłe mecze
+            if status in ["SCHEDULED", "TIMED"]:
+                continue
+        
+            tmp = (
+                m["score"]["fullTime"]
+                or m["score"].get("regularTime")
+                or m["score"]["halfTime"]
+                or {}
+            )
+        
+            score1 = tmp.get("home")
+            score2 = tmp.get("away")
+        
             if score1 is None or score2 is None:
                 continue
-
-            
+        
+            key = (home.lower(), away.lower())
+        
             matches[key] = {
                 "score": (score1, score2),
-                "status": m["status"]
+                "status": status
             }
-            
-            # 🔥 zapamiętaj live
-            
-            if m["status"] == "IN_PLAY":
+        
+            # ✅ LIVE CACHE
+            if status in ["IN_PLAY", "PAUSED"]:
                 LIVE_CACHE[key] = (score1, score2)
-
-            elif m["status"] == "FINISHED":
+        
+            elif status == "FINISHED":
                 LIVE_CACHE.pop(key, None)
+        
+
+            
 
 
         print("=== API MATCHES ===")
-        for k, v in matches.items():
-            print(k, v)
-        print("API:", home_en, "-", away_en)
-        print("MAPPED:", home, "-", away)
-
         
+        for k, v in matches.items():
+            print("MATCH:", k, v)
+
+       
         return matches
 
 
@@ -577,8 +571,7 @@ def update_results_from_api(force=False):
 def home():
 
     api = get_api_cached()
-    live_exists = any(v.get("status") == "IN_PLAY" for v in api.values())
-
+    live_exists = any(v.get("status") in ["IN_PLAY", "PAUSED"] for v in api.values())
 
     #update_missing_results()
 
@@ -933,7 +926,7 @@ def admin(request: Request):
         live_info = ""
 
         # ✅ LIVE wynik
-        if status == "IN_PLAY" and "score" in api_data:
+        if status in ["IN_PLAY", "PAUSED"] and "score" in api_data:
             g1_live, g2_live = api_data["score"]
             live_info = f" <span class='live'>🟢 {g1_live}:{g2_live}</span>"
 
