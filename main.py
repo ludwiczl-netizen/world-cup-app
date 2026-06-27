@@ -78,7 +78,8 @@ TEAM_MAP = {
 }
 # ===== APP =====
 app = FastAPI()
-
+RESULT_BUFFER = {}
+REQUIRED_CONFIRMATIONS = 3
 
 # ===== LIVE RANKING CACHE =====
 LAST_RANKING = {}
@@ -534,7 +535,7 @@ def update_results_from_api(force=False):
             home, away = [x.strip().lower() for x in mecz.split("-")]
             key = (home, away)
         except:
-            key = None
+            continue
 
 
         print("SZUKAM:", key)
@@ -555,14 +556,49 @@ def update_results_from_api(force=False):
 
 
             # ✅ zapis tylko po zakończeniu
-        if status == "FINISHED" and is_empty(row["gol1"]) and is_empty(row["gol2"]):
-
-            print(f"AUTO UPDATE: {mecz} -> {g1}:{g2}")
-
-            supabase.table("wyniki").update({
-                "gol1": g1,
-                "gol2": g2
-            }).eq("id", row["id"]).execute()
+        if status == "FINISHED":
+        
+            key_buf = key
+            current_score = (g1, g2)
+        
+            # pierwszy raz
+            if key_buf not in RESULT_BUFFER:
+                RESULT_BUFFER[key_buf] = {
+                    "score": current_score,
+                    "count": 1
+                }
+                print(f"🆕 BUFFER START: {mecz} -> {current_score}")
+                continue
+        
+            # ten sam wynik
+            if RESULT_BUFFER[key_buf]["score"] == current_score:
+                RESULT_BUFFER[key_buf]["count"] += 1
+            else:
+                # zmiana wyniku (VAR)
+                RESULT_BUFFER[key_buf] = {
+                    "score": current_score,
+                    "count": 1
+                }
+                print(f"🔄 BUFFER RESET: {mecz} -> {current_score}")
+                continue
+        
+            count = RESULT_BUFFER[key_buf]["count"]
+        
+            print(f"⏳ BUFFER {count}/{REQUIRED_CONFIRMATIONS}: {mecz}")
+        
+            # ✅ FINAL
+            if count >= REQUIRED_CONFIRMATIONS:
+        
+                if row["gol1"] != g1 or row["gol2"] != g2:
+                    print(f"✅ FINAL CONFIRMED: {mecz} -> {g1}:{g2}")
+        
+                    supabase.table("wyniki").update({
+                        "gol1": g1,
+                        "gol2": g2
+                    }).eq("id", row["id"]).execute()
+        
+                # 🔥 reset bufora
+                RESULT_BUFFER.pop(key_buf, None)
 
 # ===== HOME =====
 
